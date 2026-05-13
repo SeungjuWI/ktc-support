@@ -11,7 +11,7 @@ export interface Talent {
   ovr_score: number;
   ovr_grade: OvrGrade;
   top_skills: [string, string];
-  korean_level: number;
+  korean_level: 1 | 2 | 3 | 4 | 5;
   english_level?: number;
   desired_salary_usd: number;
   availability: Availability;

@@ -43,60 +43,57 @@ export function TalentCard({ talent }: { talent: Talent }) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border-0.5 border-gray-200/60 p-4 cursor-pointer transition-all duration-100 ease-in-out hover:border-gray-300 active:scale-[0.98] ${
+      className={`bg-white rounded-2xl border-0.5 border-gray-200/60 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98] ${
         isEmployed ? "opacity-[0.72]" : ""
       }`}
     >
-      {/* 상단: 아바타 + OVR 뱃지 (TDS Badge 스타일) */}
+      {/* 상단: 아바타 + OVR 뱃지 */}
       <div className="flex items-start justify-between mb-3">
         <div className="w-[42px] h-[42px] rounded-full bg-blue-50 flex items-center justify-center">
-          <span className="text-sm font-medium text-blue-500">
+          <span className="text-[13px] font-medium text-blue-500">
             {talent.initials}
           </span>
         </div>
-        {/* TDS Badge: fill variant 스타일 - 8px radius, 3px 6px padding */}
         <span
-          className={`text-2xs font-medium px-[6px] py-[3px] rounded-lg ${getGradeStyle(talent.ovr_grade)}`}
+          className={`text-[12px] font-medium px-2 py-[3px] rounded-full ${getGradeStyle(talent.ovr_grade)}`}
         >
           {talent.ovr_grade} {talent.ovr_score}
         </span>
       </div>
 
       {/* 직무 + 연차/지역 */}
-      <p className="text-md font-medium text-gray-900 leading-tight">
+      <p className="text-[15px] font-medium text-gray-900 leading-tight">
         {talent.role}
       </p>
-      <p className="text-xs text-gray-500 mt-[2px]">
+      <p className="text-[12px] text-gray-500 mt-[2px]">
         {talent.years_exp}년차 · {talent.location}
       </p>
 
-      {/* 핵심 스킬 태그 (TDS Badge weak 스타일) */}
+      {/* 스킬 태그 */}
       <div className="flex gap-1 mt-[10px] flex-wrap">
         {talent.top_skills.map((skill) => (
           <span
             key={skill}
-            className="text-2xs text-gray-600 bg-gray-100 px-[6px] py-[3px] rounded-lg leading-none"
+            className="text-[11px] text-gray-600 bg-gray-100 px-[7px] py-[3px] rounded-full leading-none"
           >
             {skill}
           </span>
         ))}
       </div>
 
-      {/* 한국어 능력 */}
+      {/* 한국어 */}
       <div className="flex items-center gap-[6px] mt-[10px]">
-        <span className="text-2xs text-gray-500">한국어</span>
+        <span className="text-[11px] text-gray-500">한국어</span>
         <KoreanStars level={talent.korean_level} />
       </div>
 
       {/* 하단: 합류 상태 & 연봉 */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-[5px]">
-          <span
-            className={`w-[5px] h-[5px] rounded-full ${status.dotColor}`}
-          />
-          <span className="text-2xs text-gray-500">{status.label}</span>
+          <span className={`w-[5px] h-[5px] rounded-full ${status.dotColor}`} />
+          <span className="text-[11px] text-gray-500">{status.label}</span>
         </div>
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-[13px] font-medium text-gray-900">
           ${talent.desired_salary_usd.toLocaleString()}
         </span>
       </div>
