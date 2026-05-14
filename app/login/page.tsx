@@ -1,16 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { signInWithGoogle, signOut, getUserProfile } from "@/lib/supabase-auth";
+import type { User } from "@supabase/supabase-js";
+
+type UserProfile = {
+  role: "admin" | "user";
+  status: "pending" | "approved" | "rejected";
+  name: string;
+  email: string;
+  avatar_url: string;
+};
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    console.log("[Login attempt]", { email });
-    alert("로그인 기능은 준비 중입니다. 인재 둘러보기는 로그인 없이 가능합니다.");
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        getUserProfile(user.id).then((p) => {
+          setProfile(p);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const u = session?.user ?? null;
+        setUser(u);
+        if (u) {
+          const p = await getUserProfile(u.id);
+          setProfile(p);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleGoogleLogin() {
+    const { error } = await signInWithGoogle();
+    if (error) alert("로그인 중 오류가 발생했습니다: " + error.message);
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    setUser(null);
+    setProfile(null);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
+        <p className="text-[14px] text-gray-500">로딩 중...</p>
+      </main>
+    );
   }
 
   return (
@@ -28,93 +82,151 @@ export default function LoginPage() {
         <div className="h-[0.5px] bg-gray-200/80" />
       </header>
 
-      {/* 로그인 폼 */}
       <div className="flex-1 flex items-center justify-center px-5 py-12">
         <div className="w-full max-w-[400px]">
-          <div className="text-center mb-8">
-            <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
-              로그인
-            </h1>
-            <p className="text-[14px] text-gray-500">
-              기업 담당자 계정으로 로그인하세요
-            </p>
-          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] p-6">
-              {/* 이메일 */}
-              <div className="mb-4">
-                <label className="text-[13px] font-medium text-gray-600 mb-2 block">
-                  이메일
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="이메일 주소를 입력하세요"
-                  className="w-full px-3.5 py-3 border-[0.5px] border-gray-200/60 rounded-xl text-[14px] text-gray-900 outline-none focus:border-blue-500 transition-colors placeholder:text-gray-400"
-                />
+          {/* 로그인 안 된 상태 */}
+          {!user && (
+            <>
+              <div className="text-center mb-8">
+                <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
+                  로그인
+                </h1>
+                <p className="text-[14px] text-gray-500">
+                  기업 담당자 계정으로 로그인하세요
+                </p>
               </div>
 
-              {/* 비밀번호 */}
-              <div className="mb-6">
-                <label className="text-[13px] font-medium text-gray-600 mb-2 block">
-                  비밀번호
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="비밀번호를 입력하세요"
-                  className="w-full px-3.5 py-3 border-[0.5px] border-gray-200/60 rounded-xl text-[14px] text-gray-900 outline-none focus:border-blue-500 transition-colors placeholder:text-gray-400"
-                />
+              <div className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] p-6">
+                <button
+                  onClick={handleGoogleLogin}
+                  className="w-full py-3.5 bg-white border-[0.5px] border-gray-200 rounded-xl text-[15px] font-medium text-gray-900 hover:bg-gray-50 active:scale-[0.98] transition flex items-center justify-center gap-3"
+                >
+                  <svg width="20" height="20" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                  Google 계정으로 로그인
+                </button>
               </div>
 
-              {/* 로그인 버튼 */}
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
-              >
-                로그인
-              </button>
-            </div>
+              <div className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] px-5 py-4 mt-6 text-center">
+                <p className="text-[13px] text-gray-600 mb-2">
+                  아직 계정이 없으신가요?
+                </p>
+                <Link
+                  href="/talents"
+                  className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors"
+                >
+                  로그인 없이 인재 둘러보기 →
+                </Link>
+              </div>
+            </>
+          )}
 
-            {/* 하단 링크 */}
-            <div className="flex items-center justify-center gap-4 mt-5">
+          {/* 로그인 됨 - 승인 대기 */}
+          {user && profile?.status === "pending" && (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-5">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+              </div>
+              <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
+                승인 대기 중
+              </h1>
+              <p className="text-[14px] text-gray-500 mb-1">
+                {profile.email}
+              </p>
+              <p className="text-[14px] text-gray-500 mb-6">
+                관리자가 가입을 검토 중입니다. 승인되면 서비스를 이용할 수 있습니다.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/talents"
+                  className="w-full py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition text-center"
+                >
+                  인재 둘러보기
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 로그인 됨 - 승인 거절 */}
+          {user && profile?.status === "rejected" && (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E8590C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M15 9l-6 6M9 9l6 6"/>
+                </svg>
+              </div>
+              <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
+                가입이 승인되지 않았습니다
+              </h1>
+              <p className="text-[14px] text-gray-500 mb-6">
+                문의사항이 있으시면 관리자에게 연락해주세요.
+              </p>
               <button
-                type="button"
-                onClick={() =>
-                  alert("비밀번호 찾기 기능은 준비 중입니다.")
-                }
+                onClick={handleSignOut}
                 className="text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
               >
-                비밀번호 찾기
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={() =>
-                  alert("회원가입 기능은 준비 중입니다.")
-                }
-                className="text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                회원가입
+                로그아웃
               </button>
             </div>
-          </form>
+          )}
 
-          {/* 둘러보기 안내 */}
-          <div className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] px-5 py-4 mt-6 text-center">
-            <p className="text-[13px] text-gray-600 mb-2">
-              아직 계정이 없으신가요?
-            </p>
-            <Link
-              href="/talents"
-              className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors"
-            >
-              로그인 없이 인재 둘러보기 →
-            </Link>
-          </div>
+          {/* 로그인 됨 - 승인 완료 */}
+          {user && profile?.status === "approved" && (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-5">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full" />
+                ) : (
+                  <span className="text-[22px] font-medium text-blue-500">
+                    {profile.name?.charAt(0) || profile.email?.charAt(0) || "?"}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-1">
+                {profile.name || "사용자"}님, 환영합니다
+              </h1>
+              <p className="text-[14px] text-gray-500 mb-6">
+                {profile.email}
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/talents"
+                  className="w-full py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition text-center"
+                >
+                  인재 둘러보기
+                </Link>
+                {profile.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="w-full py-3.5 bg-gray-900 text-white rounded-xl text-[15px] font-medium hover:bg-gray-800 active:scale-[0.98] transition text-center"
+                  >
+                    관리자 페이지
+                  </Link>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="text-[13px] text-gray-500 hover:text-gray-700 transition-colors mt-2"
+                >
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
