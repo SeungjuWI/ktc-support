@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Talent } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { TalentCard } from "@/app/components/talent/TalentCard";
-import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
+import { TalentPreviewModal } from "@/app/components/talent/TalentPreviewModal";
 import { Header } from "@/app/components/Header";
 
 function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.3) {
@@ -242,7 +242,6 @@ function PreviewSection({ talents, onSelectTalent }: { talents: Talent[]; onSele
               key={talent.id}
               onClick={() => onSelectTalent(talent)}
               className={`cursor-pointer transition-transform duration-200 hover:scale-[1.02] hover:z-10 ${showCards && i === 0 ? "animate-nudge" : ""}`}
-
             >
               <TalentCard
                 talent={talent}
@@ -464,7 +463,7 @@ export default function LandingPage() {
       </footer>
 
       {selectedTalent && (
-        <TalentDetailModal talent={selectedTalent} onClose={() => setSelectedTalent(null)} />
+        <TalentPreviewModal talent={selectedTalent} onClose={() => setSelectedTalent(null)} />
       )}
     </main>
   );

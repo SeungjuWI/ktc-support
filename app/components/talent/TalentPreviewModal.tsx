@@ -3,16 +3,6 @@
 import { useEffect, useState } from "react";
 import { Talent } from "@/lib/types";
 import { RadarChart } from "./RadarChart";
-import { InterviewRequestModal } from "./InterviewRequestModal";
-import { Toast } from "@/app/components/ui/Toast";
-
-const PHOTO_MAP: Record<string, string> = {
-  "1": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-  "2": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-  "3": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
-  "4": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-  "5": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-};
 
 const ABILITY_LABELS: Record<string, string> = {
   technical: "기술력",
@@ -39,32 +29,8 @@ function getGradeStyle(grade: string) {
   }
 }
 
-export function TalentDetailModal({ talent, onClose }: { talent: Talent; onClose: () => void }) {
+export function TalentPreviewModal({ talent, onClose }: { talent: Talent; onClose: () => void }) {
   const [animate, setAnimate] = useState(false);
-  const [showInterview, setShowInterview] = useState(false);
-  const [toast, setToast] = useState("");
-  const [scrapped, setScrapped] = useState(false);
-  const photo = PHOTO_MAP[talent.id];
-
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("talent-market:scraps") || "[]");
-    setScrapped(saved.includes(talent.id));
-  }, [talent.id]);
-
-  function handleScrap() {
-    const saved: string[] = JSON.parse(localStorage.getItem("talent-market:scraps") || "[]");
-    if (saved.includes(talent.id)) {
-      localStorage.setItem("talent-market:scraps", JSON.stringify(saved.filter((id: string) => id !== talent.id)));
-      setScrapped(false);
-      setToast("스크랩이 해제되었습니다");
-    } else {
-      saved.push(talent.id);
-      localStorage.setItem("talent-market:scraps", JSON.stringify(saved));
-      setScrapped(true);
-      setToast("스크랩되었습니다");
-    }
-    setTimeout(() => setToast(""), 2000);
-  }
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -85,13 +51,9 @@ export function TalentDetailModal({ talent, onClose }: { talent: Talent; onClose
         {/* 헤더 + X버튼 */}
         <div className="flex items-center justify-between p-6 pb-0">
           <div className="flex items-center gap-4">
-            {photo ? (
-              <img src={photo} alt="" className="w-[72px] h-[72px] rounded-full object-cover blur-[3px]" />
-            ) : (
-              <div className="w-[72px] h-[72px] rounded-full bg-blue-50 flex items-center justify-center">
-                <span className="text-[22px] font-medium text-blue-500">{talent.initials}</span>
-              </div>
-            )}
+            <div className="w-[72px] h-[72px] rounded-full bg-blue-50 flex items-center justify-center">
+              <span className="text-[22px] font-medium text-blue-500">{talent.initials}</span>
+            </div>
             <div>
               <p className="text-[18px] font-medium text-gray-900 mb-1">{getRoleLabel(talent.role)}</p>
               <p className="text-[14px] text-gray-500">{talent.years_exp}년차 · {talent.location}</p>
@@ -171,7 +133,7 @@ export function TalentDetailModal({ talent, onClose }: { talent: Talent; onClose
         </div>
 
         {/* 태그 + 희망 연봉 */}
-        <div className="px-6 pt-3">
+        <div className="px-6 pt-3 pb-6">
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap gap-1.5">
               {talent.availability === "immediate" && (
@@ -184,41 +146,7 @@ export function TalentDetailModal({ talent, onClose }: { talent: Talent; onClose
             <p className="text-[20px] font-medium text-gray-900 flex-shrink-0 ml-3">{talent.desired_salary_krw}만원<span className="text-[12px] text-gray-500 font-normal">/월</span></p>
           </div>
         </div>
-
-        {/* 하단 버튼 */}
-        <div className="px-6 pt-4 pb-5 flex gap-2">
-          <button
-            onClick={handleScrap}
-            className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border-[0.5px] transition-colors ${
-              scrapped ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill={scrapped ? "#3182F6" : "none"} stroke={scrapped ? "#3182F6" : "#8B95A1"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 3h10a1 1 0 011 1v13.5l-6-3.5-6 3.5V4a1 1 0 011-1z"/>
-            </svg>
-          </button>
-          <button
-            onClick={() => setShowInterview(true)}
-            className="flex-1 h-12 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
-          >
-            문의하기
-          </button>
-        </div>
       </div>
-
-      {showInterview && (
-        <InterviewRequestModal
-          talent={talent}
-          onClose={() => setShowInterview(false)}
-          onSuccess={() => {
-            setShowInterview(false);
-            setToast("요청이 접수되었습니다. KTC 매니저가 곧 연락드립니다.");
-            setTimeout(() => setToast(""), 3000);
-          }}
-        />
-      )}
-
-      {toast && <Toast message={toast} />}
     </div>
   );
 }
