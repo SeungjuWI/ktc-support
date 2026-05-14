@@ -19,12 +19,9 @@ export default function LoginPage() {
       <header className="bg-white">
         <div className="mx-auto max-w-[1080px] px-5 h-[56px] flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect width="20" height="20" rx="6" fill="#3182F6" />
-              <path d="M6 10.5L9 13.5L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-[18px] font-medium text-gray-900 tracking-tight">
-              베팀
+            <img src="/logo.png" alt="VTM" width={24} height={24} className="rounded-[4px]" />
+            <span className="text-[18px] text-gray-900 tracking-tight" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>
+              Vtm
             </span>
           </Link>
         </div>
