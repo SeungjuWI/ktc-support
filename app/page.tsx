@@ -21,9 +21,64 @@ function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.3) {
   return visible;
 }
 
+function WhyVietnam() {
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useInView(ref, 0.3);
+  const [showTitle, setShowTitle] = useState(false);
+  const [showItems, setShowItems] = useState([false, false, false, false, false]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    timers.push(setTimeout(() => setShowTitle(true), 0));
+    for (let i = 0; i < 5; i++) {
+      timers.push(setTimeout(() => setShowItems((p) => { const n = [...p]; n[i] = true; return n; }), 600 + i * 200));
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [visible]);
+
+  const items = [
+    { num: "50%", desc: "한국 동일 직군 대비 인건비", icon: "💰" },
+    { num: "110만+", desc: "베트남 IT 인력 풀 (매년 5만명 배출)", icon: "👨‍💻" },
+    { num: "2시간", desc: "한국과의 시차 (실시간 협업 가능)", icon: "🕐" },
+    { num: "한국어", desc: "한국어 가능 인재 확보 가능", icon: "🇰🇷" },
+    { num: "근면성실", desc: "높은 업무 몰입도와 성실한 문화", icon: "🔥" },
+  ];
+
+  return (
+    <section className="bg-white">
+      <div className="mx-auto max-w-[1080px] px-5 py-40" ref={ref}>
+        <div className={`transition-all duration-700 ${showTitle ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <p className="text-[28px] md:text-[34px] font-[600] text-gray-900 tracking-tight text-center mb-3">
+            왜 <span className="text-blue-500">베트남</span> IT 인재인가요?
+          </p>
+          <p className="text-[17px] text-gray-500 text-center mb-14">
+            이미 글로벌 기업들이 선택한 이유가 있습니다
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-5 max-w-[960px] mx-auto">
+          {items.map((item, i) => (
+            <div
+              key={item.num}
+              className={`text-center p-6 rounded-2xl border-[1.5px] border-gray-200 bg-white transition-all duration-500 ${
+                showItems[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+            >
+              <p className="text-[28px] mb-3">{item.icon}</p>
+              <p className="text-[22px] font-[600] text-gray-900 mb-1">{item.num}</p>
+              <p className="text-[13px] text-gray-500 leading-snug">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SubHero() {
   const ref = useRef<HTMLDivElement>(null);
-  const visible = useInView(ref, 0.2);
+  const visible = useInView(ref, 0.5);
   const [show, setShow] = useState([false, false, false, false]);
 
   useEffect(() => {
@@ -40,7 +95,7 @@ function SubHero() {
   const lines = ["서류 검증", "전화 면접", "능력치 정량화"];
 
   return (
-    <section className="bg-white border-b-[0.5px] border-gray-200/60">
+    <section className="bg-white border-b-[0.5px] border-gray-200/60 mt-20">
       <div className="mx-auto max-w-[1080px] px-5 py-48 text-center" ref={ref}>
         <div className="mb-8">
           {lines.map((text, i) => (
@@ -90,14 +145,14 @@ function CompareSection() {
     timers.push(setTimeout(() => setShowTitle(true), 0));
 
     COMPARE_ROWS.forEach((_, i) => {
-      const base = 600 + i * 1200;
+      const base = 500 + i * 800;
       timers.push(setTimeout(() => {
         setActiveRow(i);
         setRowPhase((p) => { const n = [...p]; n[i] = 1; return n; });
       }, base));
       timers.push(setTimeout(() => {
         setRowPhase((p) => { const n = [...p]; n[i] = 2; return n; });
-      }, base + 600));
+      }, base + 400));
     });
     return () => timers.forEach(clearTimeout);
   }, [visible]);
@@ -176,13 +231,18 @@ function PreviewSection({ talents, onSelectTalent }: { talents: typeof dummyTale
           <p className="text-[28px] md:text-[34px] font-[600] text-gray-900 tracking-tight text-center mb-3">
             이런 인재들이 <span className="text-blue-500">검증</span>되어 있어요
           </p>
-          <p className="text-[17px] text-gray-500 text-center mb-12">
+          <p className="text-[17px] text-gray-500 text-center mb-3">
             이력서 분석 · 전화 면접 · 능력치 평가가 완료된 인재만 등록됩니다
           </p>
         </div>
         <div className={`grid grid-cols-2 md:grid-cols-4 gap-[10px] max-w-[900px] mx-auto transition-all duration-700 ${showCards ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
           {talents.map((talent, i) => (
-            <div key={talent.id} onClick={() => onSelectTalent(talent)} className="cursor-pointer">
+            <div
+              key={talent.id}
+              onClick={() => onSelectTalent(talent)}
+              className={`cursor-pointer transition-transform duration-200 hover:scale-[1.02] hover:z-10 ${showCards && i === 0 ? "animate-nudge" : ""}`}
+
+            >
               <TalentCard
                 talent={talent}
                 photoUrl={[
@@ -463,6 +523,9 @@ export default function LandingPage() {
         </button>
       </section>
 
+
+      {/* 왜 베트남인가 */}
+      <WhyVietnam />
 
       {/* 서브 히어로 */}
       <SubHero />

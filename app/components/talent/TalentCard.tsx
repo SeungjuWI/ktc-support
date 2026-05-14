@@ -43,7 +43,7 @@ export function TalentCard({ talent, photoUrl }: { talent: Talent; photoUrl?: st
 
   return (
     <div
-      className={`bg-white rounded-2xl border-0.5 border-gray-200/60 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98] ${
+      className={`bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98] ${
         isEmployed ? "opacity-[0.72]" : ""
       }`}
     >

@@ -103,6 +103,17 @@ body {
 .step-card-2 > div { animation: stepHighlight 4.5s linear 1.5s infinite; }
 .step-card-3 > div { animation: stepHighlight 4.5s linear 3s infinite; }
 
+/* 카드 클릭 유도 — 살짝 들썩임 */
+@keyframes cardNudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-nudge {
+  animation: cardNudge 1.5s ease-in-out 2;
+  animation-delay: 1s;
+}
+
 /* ─── 랜딩 히어로 일러스트 ─── */
 
 /* 메인 카드: 왼쪽에서 슬라이드 + 페이드 */
