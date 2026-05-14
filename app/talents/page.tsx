@@ -1,12 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { dummyTalents } from "@/lib/dummy-talents";
+import { Talent } from "@/lib/types";
 import { TalentCard } from "@/app/components/talent/TalentCard";
 import { FilterChips } from "@/app/components/talent/FilterChips";
+import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
 
 export default function TalentsPage() {
   const availableCount = dummyTalents.filter(
     (t) => t.availability === "immediate"
   ).length;
+
+  const [selected, setSelected] = useState<Talent | null>(null);
 
   return (
     <main className="min-h-screen bg-[#F7F8FA]">
@@ -14,12 +21,9 @@ export default function TalentsPage() {
       <header className="bg-white sticky top-0 z-10">
         <div className="mx-auto max-w-[1080px] px-5 h-[56px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect width="20" height="20" rx="6" fill="#3182F6" />
-              <path d="M6 10.5L9 13.5L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-[18px] font-medium text-gray-900 tracking-tight">
-              베팀
+            <img src="/logo.png" alt="VTM" width={24} height={24} className="rounded-[4px]" />
+            <span className="text-[18px] text-gray-900 tracking-tight" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>
+              Vtm
             </span>
           </Link>
           <Link
@@ -60,9 +64,9 @@ export default function TalentsPage() {
         {/* 카드 그리드 */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[10px]">
           {dummyTalents.map((talent) => (
-            <Link key={talent.id} href={`/talents/${talent.id}`}>
+            <div key={talent.id} onClick={() => setSelected(talent)} className="cursor-pointer">
               <TalentCard talent={talent} />
-            </Link>
+            </div>
           ))}
         </div>
 
@@ -73,6 +77,10 @@ export default function TalentsPage() {
           </button>
         </div>
       </div>
+
+      {selected && (
+        <TalentDetailModal talent={selected} onClose={() => setSelected(null)} />
+      )}
     </main>
   );
 }

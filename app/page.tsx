@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { dummyTalents } from "@/lib/dummy-talents";
 import { Talent } from "@/lib/types";
 import { TalentCard } from "@/app/components/talent/TalentCard";
-import { RadarChart } from "@/app/components/talent/RadarChart";
+import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
 
 function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.3) {
   const [visible, setVisible] = useState(false);
@@ -135,7 +135,6 @@ function CompareSection() {
   const ref = useRef<HTMLDivElement>(null);
   const visible = useInView(ref, 0.35);
   const [showTitle, setShowTitle] = useState(false);
-  const [activeRow, setActiveRow] = useState(-1);
   const [rowPhase, setRowPhase] = useState<number[]>([]);
   // phase: 0=hidden, 1=old visible, 2=old faded + new appears
 
@@ -147,7 +146,6 @@ function CompareSection() {
     COMPARE_ROWS.forEach((_, i) => {
       const base = 500 + i * 800;
       timers.push(setTimeout(() => {
-        setActiveRow(i);
         setRowPhase((p) => { const n = [...p]; n[i] = 1; return n; });
       }, base));
       timers.push(setTimeout(() => {
@@ -231,7 +229,7 @@ function PreviewSection({ talents, onSelectTalent }: { talents: typeof dummyTale
           <p className="text-[28px] md:text-[34px] font-[600] text-gray-900 tracking-tight text-center mb-3">
             이런 인재들이 <span className="text-blue-500">검증</span>되어 있어요
           </p>
-          <p className="text-[17px] text-gray-500 text-center mb-3">
+          <p className="text-[17px] text-gray-500 text-center mb-14">
             이력서 분석 · 전화 면접 · 능력치 평가가 완료된 인재만 등록됩니다
           </p>
         </div>
@@ -288,162 +286,6 @@ function CtaSection() {
   );
 }
 
-function TalentPreviewModal({ talent, onClose }: { talent: Talent; onClose: () => void }) {
-  const [animate, setAnimate] = useState(false);
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const t = setTimeout(() => setAnimate(true), 100);
-    return () => { document.body.style.overflow = ""; clearTimeout(t); };
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  const photoMap: Record<string, string> = {
-    "1": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    "2": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-    "3": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
-    "4": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    "5": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-  };
-  const photo = photoMap[talent.id];
-
-  const getRoleLabel = (role: string) => {
-    if (role.includes("디자이너")) return role;
-    if (role.includes("분석가")) return role;
-    if (role.includes("QA")) return "QA 엔지니어";
-    if (role.includes("DevOps")) return "DevOps 엔지니어";
-    return `${role} 개발자`;
-  };
-
-  const getGradeStyle = (grade: string) => {
-    switch (grade) {
-      case "S": return "bg-grade-s-bg text-grade-s-text";
-      case "A": return "bg-grade-a-bg text-grade-a-text";
-      default: return "bg-grade-b-bg text-grade-b-text";
-    }
-  };
-
-  const abilityLabels: Record<string, string> = {
-    technical: "기술력", korean: "한국어", english: "영어",
-    collaboration: "협업", stability: "안정성", growth: "성장성",
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center" onClick={onClose}>
-      <div className="w-full max-w-[640px] mx-4 bg-white rounded-[20px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-
-        {/* 헤더 + X버튼 */}
-        <div className="flex items-start justify-between p-6 pb-0">
-          <div className="flex items-center gap-4">
-            {photo ? (
-              <img src={photo} alt="" className="w-[72px] h-[72px] rounded-full object-cover blur-[3px]" />
-            ) : (
-              <div className="w-[72px] h-[72px] rounded-full bg-blue-50 flex items-center justify-center">
-                <span className="text-[22px] font-medium text-blue-500">{talent.initials}</span>
-              </div>
-            )}
-            <div>
-              <p className="text-[18px] font-medium text-gray-900 mb-1">{getRoleLabel(talent.role)}</p>
-              <p className="text-[14px] text-gray-500">{talent.years_exp}년차 · {talent.location}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className={`text-center px-4 py-2.5 rounded-xl ${getGradeStyle(talent.ovr_grade)}`}>
-              <p className="text-[22px] font-medium leading-none">{talent.ovr_score}</p>
-              <p className="text-[11px] font-medium mt-1">OVR · {talent.ovr_grade}</p>
-            </div>
-            <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-gray-100 rounded-[10px]">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round">
-                <path d="M5 5l8 8M13 5l-8 8" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* KTC 평가 */}
-        <div className="px-6 pt-5">
-          <div className="bg-[#F7F8FA] rounded-xl px-4 py-3.5">
-            <p className="text-[12px] text-gray-500 mb-1.5">KTC 평가</p>
-            <p className="text-[14px] text-gray-900 leading-relaxed">{talent.ktc_comment}</p>
-          </div>
-        </div>
-
-        {/* 레이더 차트 + 능력치 */}
-        <div className="px-6 pt-4">
-          <div className="flex items-center gap-6">
-            <div className="flex-shrink-0 scale-[0.85] origin-top-left">
-              <RadarChart abilities={talent.abilities} />
-            </div>
-            <div className="flex-1 grid grid-cols-2 gap-y-3.5 gap-x-5">
-              {Object.entries(talent.abilities).map(([key, value], i) => (
-                <div key={key}>
-                  <p className="text-[12px] mb-1"><span className="text-gray-500">{abilityLabels[key]}</span> <span className="font-medium text-gray-900">{value}</span></p>
-                  <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gray-900 rounded-full transition-all duration-700 ease-out"
-                      style={{ width: animate ? `${value}%` : "0%", transitionDelay: `${0.3 + i * 0.08}s` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 세부 스킬 */}
-        <div className="px-6 pt-3">
-          <p className="text-[11px] text-gray-500 mb-2">세부 스킬</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            {talent.detailed_skills.map((skill, i) => (
-              <div key={skill.name} className="flex items-center gap-2">
-                <span className="text-[12px] text-gray-900 w-[70px] flex-shrink-0">{skill.name}</span>
-                <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ease-out ${skill.type === "core" ? "bg-blue-500" : "bg-gray-400"}`}
-                    style={{ width: animate ? `${skill.score}%` : "0%", transitionDelay: `${0.6 + i * 0.08}s` }}
-                  />
-                </div>
-                <span className="text-[11px] text-gray-500 w-5 text-right">{skill.score}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 경력 — 한 줄 */}
-        <div className="px-6 pt-3">
-          <p className="text-[11px] text-gray-500 mb-2">경력</p>
-          {talent.career_history.map((career, i) => (
-            <div key={i} className="flex items-center gap-2 mb-1">
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${career.current ? "bg-blue-500" : "bg-gray-300"}`} />
-              <p className="text-[12px] text-gray-700">{career.tier} · {career.position} · {career.startDate}–{career.current ? "현재" : career.endDate}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* 태그 + 희망 연봉 */}
-        <div className="px-6 pt-3 pb-5">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex flex-wrap gap-1.5">
-              {talent.availability === "immediate" && (
-                <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-500 font-medium">즉시 합류</span>
-              )}
-              {talent.tags.map((tag) => (
-                <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">{tag}</span>
-              ))}
-            </div>
-            <p className="text-[14px] font-medium text-gray-900 flex-shrink-0 ml-3">{talent.desired_salary_krw}만원<span className="text-[11px] text-gray-500 font-normal">/월</span></p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function LandingPage() {
   const previewTalents = dummyTalents
     .filter((t) => t.availability !== "employed")
@@ -469,32 +311,30 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-[#F7F8FA]">
+      {/* 헤더 */}
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="mx-auto max-w-[1080px] px-5 h-[56px] flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="VTM" width={24} height={24} className="rounded-[4px]" />
+            <span className="text-[18px] text-gray-900 tracking-tight" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>
+              Vtm
+            </span>
+          </Link>
+          <Link href="/login" className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors">
+            로그인
+          </Link>
+        </div>
+        <div className="h-[0.5px] bg-gray-200/80" />
+      </header>
+
       {/* 히어로 — 풀스크린 배경 이미지 */}
-      <section className="h-screen relative flex items-center justify-center overflow-hidden">
+      <section className="h-[calc(100vh-56px)] relative flex items-center justify-center overflow-hidden">
         {/* 배경 이미지 */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/hero-bg.jpg')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/55 via-white/35 to-white/65" />
-
-        {/* 헤더 */}
-        <header className="absolute top-0 left-0 right-0 z-10">
-          <div className="mx-auto max-w-[1080px] px-5 h-[56px] flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect width="20" height="20" rx="6" fill="#3182F6" />
-                <path d="M6 10.5L9 13.5L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="text-[18px] font-medium text-gray-900 tracking-tight">
-                베팀
-              </span>
-            </Link>
-            <Link href="/login" className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors">
-              로그인
-            </Link>
-          </div>
-        </header>
 
         {/* 콘텐츠 — 텍스트 뒤에 은은한 백드롭 */}
         <div className="relative z-10 text-center px-5">
@@ -618,18 +458,15 @@ export default function LandingPage() {
       <footer className="border-t-[0.5px] border-gray-200/60 px-5 py-8">
         <div className="max-w-[1080px] mx-auto">
           <div className="flex items-center gap-2 mb-2">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-              <rect width="20" height="20" rx="6" fill="#3182F6" />
-              <path d="M6 10.5L9 13.5L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-[14px] font-medium text-gray-700">베팀</span>
+            <img src="/logo.png" alt="VTM" width={20} height={20} className="rounded-[3px]" />
+            <span className="text-[14px] text-gray-700" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>Vtm</span>
           </div>
           <p className="text-[12px] text-gray-500">KTC 파트너사 · 베트남 IT 인재 마켓플레이스</p>
         </div>
       </footer>
 
       {selectedTalent && (
-        <TalentPreviewModal talent={selectedTalent} onClose={() => setSelectedTalent(null)} />
+        <TalentDetailModal talent={selectedTalent} onClose={() => setSelectedTalent(null)} />
       )}
     </main>
   );
