@@ -34,7 +34,7 @@ export interface Talent {
   ovr_grade: OvrGrade;
   top_skills: [string, string];
   korean_level: 1 | 2 | 3 | 4 | 5;
-  desired_salary_usd: number;
+  desired_salary_krw: number; // 만원 단위 (월급)
   availability: Availability;
   ktc_comment: string;
   abilities: Abilities;

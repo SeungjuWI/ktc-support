@@ -11,7 +11,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "S",
     top_skills: ["React", "TypeScript"],
     korean_level: 4,
-    desired_salary_usd: 2800,
+    desired_salary_krw: 380,
     availability: "immediate",
     ktc_comment:
       "한국 기업 협업 경험 풍부. 의사소통 명료하고 일정 준수 우수.",
@@ -47,7 +47,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "S",
     top_skills: ["Java", "Spring Boot"],
     korean_level: 3,
-    desired_salary_usd: 3200,
+    desired_salary_krw: 430,
     availability: "negotiable",
     ktc_comment:
       "대규모 트래픽 처리 경험 보유. 꼼꼼한 성격으로 코드 리뷰에 적극적.",
@@ -83,7 +83,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "S",
     top_skills: ["Figma", "Prototyping"],
     korean_level: 5,
-    desired_salary_usd: 2400,
+    desired_salary_krw: 320,
     availability: "immediate",
     ktc_comment:
       "차분하고 논리적인 디자이너. 한국어 능통하여 커뮤니케이션 비용 매우 낮음.",
@@ -119,7 +119,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["Node.js", "React"],
     korean_level: 2,
-    desired_salary_usd: 2600,
+    desired_salary_krw: 350,
     availability: "negotiable",
     ktc_comment:
       "프론트와 백엔드를 균형 있게 다루는 타입. 단독 작업보다 팀 협업에서 강점.",
@@ -155,7 +155,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["Python", "FastAPI"],
     korean_level: 3,
-    desired_salary_usd: 2000,
+    desired_salary_krw: 270,
     availability: "immediate",
     ktc_comment:
       "빠른 학습 속도와 문제 해결 능력이 강점. 안정성보다는 성장에 무게.",
@@ -190,7 +190,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["AWS", "Docker"],
     korean_level: 4,
-    desired_salary_usd: 3500,
+    desired_salary_krw: 470,
     availability: "negotiable",
     ktc_comment:
       "인프라 전반에 대한 깊은 이해. 장애 대응이 빠르고 문서화를 잘함.",
@@ -226,7 +226,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["Vue.js", "JavaScript"],
     korean_level: 1,
-    desired_salary_usd: 1400,
+    desired_salary_krw: 190,
     availability: "immediate",
     ktc_comment:
       "성실하고 피드백 수용 자세가 좋음. 한국어는 기초 수준이나 영어 소통 가능.",
@@ -261,7 +261,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["SQL", "Python"],
     korean_level: 2,
-    desired_salary_usd: 2200,
+    desired_salary_krw: 300,
     availability: "employed",
     ktc_comment:
       "데이터 기반 의사결정에 강점. 현직 중이나 좋은 기회에 이직 의향 있음.",
@@ -297,7 +297,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "A",
     top_skills: ["React Native", "TypeScript"],
     korean_level: 3,
-    desired_salary_usd: 1800,
+    desired_salary_krw: 240,
     availability: "negotiable",
     ktc_comment:
       "모바일 크로스플랫폼 개발 전문. 차분한 성격으로 장기 프로젝트에 적합.",
@@ -332,7 +332,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "B",
     top_skills: ["Go", "PostgreSQL"],
     korean_level: 5,
-    desired_salary_usd: 1600,
+    desired_salary_krw: 215,
     availability: "negotiable",
     ktc_comment:
       "한국어 능통. 기술적으로는 성장 중이나 소통 능력이 뛰어나 팀 적응이 빠름.",
@@ -367,7 +367,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "B",
     top_skills: ["Sketch", "Adobe XD"],
     korean_level: 4,
-    desired_salary_usd: 1500,
+    desired_salary_krw: 200,
     availability: "immediate",
     ktc_comment:
       "꼼꼼한 작업 스타일. 시스템 디자인보다 비주얼 디자인에 강점.",
@@ -402,7 +402,7 @@ export const dummyTalents: Talent[] = [
     ovr_grade: "C",
     top_skills: ["Selenium", "Cypress"],
     korean_level: 1,
-    desired_salary_usd: 1000,
+    desired_salary_krw: 135,
     availability: "employed",
     ktc_comment:
       "테스트 자동화에 관심이 많은 주니어. 영어 소통 가능, 한국어는 학습 초기 단계.",

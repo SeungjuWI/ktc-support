@@ -7,7 +7,7 @@ export interface InterviewRequest {
     yearsExp: number;
     ovrGrade: "S" | "A" | "B" | "C";
     ovrScore: number;
-    desiredSalaryUsd: number;
+    desiredSalaryKrw: number;
   };
   requesterSnapshot: {
     companyName: string;

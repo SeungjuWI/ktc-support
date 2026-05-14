@@ -98,7 +98,7 @@ export function TalentCard({ talent, photoUrl }: { talent: Talent; photoUrl?: st
           <span className="text-[11px] text-gray-500">{status.label}</span>
         </div>
         <span className="text-[13px] font-medium text-gray-900">
-          ${talent.desired_salary_usd.toLocaleString()}
+          {talent.desired_salary_krw}만원
         </span>
       </div>
     </div>

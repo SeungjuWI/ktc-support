@@ -3,9 +3,9 @@ import { dummyTalents } from "@/lib/dummy-talents";
 import { TalentCard } from "@/app/components/talent/TalentCard";
 
 export default function LandingPage() {
-  const previewTalents = dummyTalents.filter(
-    (t) => t.availability !== "employed"
-  ).slice(0, 4);
+  const previewTalents = dummyTalents
+    .filter((t) => t.availability !== "employed")
+    .slice(0, 4);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -21,108 +21,104 @@ export default function LandingPage() {
               TalentMarket
             </span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/talents"
-              className="text-[14px] text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              인재 보기
-            </Link>
-            <Link
-              href="/login"
-              className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors"
-            >
-              로그인
-            </Link>
-          </div>
+          <Link
+            href="/login"
+            className="text-[14px] text-blue-500 font-medium hover:text-blue-600 transition-colors"
+          >
+            로그인
+          </Link>
         </div>
         <div className="h-[0.5px] bg-gray-200/80" />
       </header>
 
       {/* 히어로 */}
       <section className="bg-white">
-        <div className="mx-auto max-w-[1080px] px-5 py-16 md:py-24">
-          <div className="max-w-[560px]">
-            <p className="text-[14px] text-blue-500 font-medium mb-3 animate-section">
-              베트남 IT 인재 마켓플레이스
-            </p>
-            <h1 className="text-[32px] md:text-[40px] font-medium text-gray-900 leading-tight tracking-tight mb-4 animate-section animate-delay-1">
-              이력서 대신,<br />
-              3초 만에 인재를 파악하세요
-            </h1>
-            <p className="text-[16px] text-gray-600 leading-relaxed mb-8 animate-section animate-delay-2">
-              KTC가 검증한 베트남 IT 인재의 능력치를 한눈에 비교하고,
-              <br className="hidden md:block" />
-              바로 인터뷰를 요청하세요. 영업일 1일 내 회신드립니다.
-            </p>
-            <div className="flex gap-3 animate-section animate-delay-3">
-              <Link
-                href="/talents"
-                className="bg-blue-500 text-white px-6 py-3.5 rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
-              >
-                인재 둘러보기
-              </Link>
-              <Link
-                href="/login"
-                className="bg-gray-100 text-gray-700 px-6 py-3.5 rounded-xl text-[15px] font-medium hover:bg-gray-200 active:scale-[0.98] transition"
-              >
-                로그인
-              </Link>
-            </div>
+        <div className="mx-auto max-w-[1080px] px-5 py-16 md:py-24 text-center">
+          <p className="text-[14px] text-blue-500 font-medium mb-4 animate-section">
+            베트남 개발자 채용, 아직도 이력서만 보고 계신가요?
+          </p>
+          <h1 className="text-[28px] md:text-[40px] font-medium text-gray-900 leading-tight tracking-tight mb-5 animate-section animate-delay-1">
+            검증된 IT 인재를<br />
+            능력치 카드로 3초 만에 비교하세요
+          </h1>
+          <p className="text-[15px] md:text-[16px] text-gray-500 leading-relaxed mb-8 max-w-[480px] mx-auto animate-section animate-delay-2">
+            기술력·한국어·협업 능력까지 6대 역량을 KTC가 직접 평가했습니다.
+            마음에 드는 인재에게 바로 인터뷰를 요청하세요.
+          </p>
+          <div className="flex justify-center gap-3 animate-section animate-delay-3">
+            <Link
+              href="/login"
+              className="bg-blue-500 text-white px-6 py-3.5 rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
+            >
+              무료로 시작하기
+            </Link>
           </div>
         </div>
         <div className="h-[0.5px] bg-gray-200/80" />
       </section>
 
-      {/* 핵심 가치 3개 */}
-      <section className="mx-auto max-w-[1080px] px-5 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 이용 방법 3단계 */}
+      <section className="mx-auto max-w-[1080px] px-5 py-16">
+        <p className="text-[12px] text-blue-500 font-medium mb-2 text-center">
+          이용 방법
+        </p>
+        <p className="text-[22px] font-medium text-gray-900 tracking-tight text-center mb-10">
+          3단계로 끝나는 채용
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {([
             {
-              title: "KTC 검증 인재",
-              desc: "기술력, 한국어, 협업 능력까지 6대 역량을 직접 평가한 인재만 등록됩니다.",
+              step: "01",
+              title: "인재 카드 비교",
+              desc: "직무, 경력, 한국어 능력, OVR 점수를 한눈에 비교하세요. 이력서를 열어볼 필요 없습니다.",
               icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 12l2 2 4-4" />
-                  <circle cx="12" cy="12" r="10" />
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="9" height="9" rx="2" />
+                  <rect x="16" y="3" width="9" height="9" rx="2" />
+                  <rect x="3" y="16" width="9" height="9" rx="2" />
+                  <rect x="16" y="16" width="9" height="9" rx="2" />
                 </svg>
               ),
             },
             {
-              title: "3초 인재 파악",
-              desc: "FIFA 스타일 능력치 카드로 이력서를 읽지 않고도 인재를 빠르게 비교할 수 있습니다.",
+              step: "02",
+              title: "인터뷰 요청",
+              desc: "마음에 드는 인재를 발견하면 버튼 한 번으로 인터뷰를 요청하세요. 회사 정보만 입력하면 됩니다.",
               icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 7L10.5 18.5 6 14" />
                 </svg>
               ),
             },
             {
-              title: "1일 내 회신",
-              desc: "인터뷰 요청 즉시 KTC 매니저가 후보자와 일정을 조율하고, 영업일 1일 내 회신드립니다.",
+              step: "03",
+              title: "KTC 매니저가 연결",
+              desc: "영업일 1일 내에 KTC 매니저가 후보자와 일정을 조율하고, 면접을 세팅해 드립니다.",
               icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#3182F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="14" cy="10" r="4" />
+                  <path d="M6 24c0-4.42 3.58-8 8-8s8 3.58 8 8" />
                 </svg>
               ),
             },
           ] as const).map((item, i) => (
             <div
-              key={item.title}
-              className={`bg-white border-[0.5px] border-gray-200/60 rounded-[20px] p-6 animate-section`}
+              key={item.step}
+              className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] p-6 animate-section"
               style={{ animationDelay: `${0.1 + i * 0.1}s` }}
             >
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-                {item.icon}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <span className="text-[12px] font-medium text-blue-500">
+                  STEP {item.step}
+                </span>
               </div>
               <p className="text-[15px] font-medium text-gray-900 mb-2">
                 {item.title}
               </p>
-              <p className="text-[13px] text-gray-600 leading-relaxed">
+              <p className="text-[13px] text-gray-500 leading-relaxed">
                 {item.desc}
               </p>
             </div>
@@ -130,10 +126,34 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 인재 미리보기 (블러 처리) */}
-      <section className="mx-auto max-w-[1080px] px-5 pb-14">
-        <p className="text-[18px] font-medium text-gray-900 tracking-tight mb-4">
-          이런 인재들이 등록되어 있어요
+      {/* 숫자로 보는 서비스 */}
+      <section className="bg-white border-y-[0.5px] border-gray-200/60">
+        <div className="mx-auto max-w-[1080px] px-5 py-14">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {([
+              { num: "142명", label: "등록 인재" },
+              { num: "6대 역량", label: "KTC 직접 평가" },
+              { num: "1일 내", label: "인터뷰 회신" },
+              { num: "135~470만", label: "월 희망 연봉대" },
+            ] as const).map((item) => (
+              <div key={item.label}>
+                <p className="text-[24px] font-medium text-gray-900 mb-1">
+                  {item.num}
+                </p>
+                <p className="text-[13px] text-gray-500">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 인재 미리보기 (블러) */}
+      <section className="mx-auto max-w-[1080px] px-5 py-16">
+        <p className="text-[12px] text-blue-500 font-medium mb-2 text-center">
+          미리보기
+        </p>
+        <p className="text-[22px] font-medium text-gray-900 tracking-tight text-center mb-8">
+          이런 인재들이 기다리고 있어요
         </p>
         <div className="relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] select-none pointer-events-none">
@@ -151,13 +171,12 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          {/* 오버레이 */}
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/60 rounded-2xl">
             <p className="text-[15px] font-medium text-gray-900 mb-1">
               로그인하면 인재 프로필을 확인할 수 있어요
             </p>
             <p className="text-[13px] text-gray-500 mb-4">
-              KTC 검증 인재 142명의 상세 능력치를 확인해보세요
+              능력치, 경력, 한국어 수준까지 상세하게 비교해보세요
             </p>
             <Link
               href="/login"
@@ -169,20 +188,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA 배너 */}
+      {/* 최종 CTA */}
       <section className="bg-white border-t-[0.5px] border-gray-200/60">
-        <div className="mx-auto max-w-[1080px] px-5 py-14 text-center">
+        <div className="mx-auto max-w-[1080px] px-5 py-16 text-center">
           <p className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
-            지금 바로 인재를 확인해보세요
+            채용 고민, 여기서 끝내세요
           </p>
           <p className="text-[14px] text-gray-500 mb-6">
-            로그인 없이도 인재 프로필을 둘러볼 수 있습니다
+            가입은 무료입니다. 인터뷰 요청 시에만 비용이 발생합니다.
           </p>
           <Link
-            href="/talents"
+            href="/login"
             className="inline-block bg-blue-500 text-white px-8 py-3.5 rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
           >
-            인재 둘러보기
+            무료로 시작하기
           </Link>
         </div>
       </section>

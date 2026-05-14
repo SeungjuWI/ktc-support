@@ -88,7 +88,7 @@ export function InterviewRequestModal({
         yearsExp: talent.years_exp,
         ovrGrade: talent.ovr_grade,
         ovrScore: talent.ovr_score,
-        desiredSalaryUsd: talent.desired_salary_usd,
+        desiredSalaryKrw: talent.desired_salary_krw,
       },
       requesterSnapshot: {
         companyName: guest.companyName,
