@@ -7,7 +7,7 @@ import {
   saveGuestUser,
   validateGuestInput,
 } from "@/lib/guest-user";
-import { saveRequest } from "@/lib/interview-requests";
+import { submitInterviewRequest } from "@/lib/supabase-queries";
 import { availabilityKR, formatRoleTitle } from "@/lib/i18n";
 
 export function InterviewRequestModal({
@@ -71,32 +71,30 @@ export function InterviewRequestModal({
     setErrors({});
   }
 
-  function handleSubmit() {
-    // 게스트 정보 검증 + 저장
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
     const { valid, errors: newErrors } = validateGuestInput(form);
     if (!valid) {
       setErrors(newErrors);
       return;
     }
     const guest = saveGuestUser(form);
+    setSubmitting(true);
 
-    saveRequest({
-      talentId: talent.id,
-      talentSnapshot: {
-        initials: talent.initials,
-        role: talent.role,
-        yearsExp: talent.years_exp,
-        ovrGrade: talent.ovr_grade,
-        ovrScore: talent.ovr_score,
-        desiredSalaryKrw: talent.desired_salary_krw,
-      },
-      requesterSnapshot: {
-        companyName: guest.companyName,
-        contactName: guest.contactName,
-        contactEmail: guest.contactEmail,
-      },
-      message,
+    const { error } = await submitInterviewRequest({
+      talent_id: talent.id,
+      company_name: guest.companyName,
+      contact_name: guest.contactName,
+      contact_email: guest.contactEmail,
+      message: message || undefined,
     });
+
+    setSubmitting(false);
+    if (error) {
+      alert("요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+      return;
+    }
     onSuccess();
   }
 
@@ -348,9 +346,10 @@ export function InterviewRequestModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-[2] py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition"
+            disabled={submitting}
+            className="flex-[2] py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition disabled:opacity-60"
           >
-            요청 보내기
+            {submitting ? "요청 중..." : "요청 보내기"}
           </button>
         </div>
       </div>

@@ -1,22 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { dummyTalents } from "@/lib/dummy-talents";
+import { fetchTalents, fetchTalentById } from "@/lib/supabase-queries";
 import { AbilityCard } from "@/app/components/talent/AbilityCard";
 import { CareerHistory } from "@/app/components/talent/CareerHistory";
 import { TalentTags } from "@/app/components/talent/TalentTags";
 import { InterviewCTA } from "@/app/components/talent/InterviewCTA";
 import { DetailNav } from "./DetailNav";
 
-export function generateStaticParams() {
-  return dummyTalents.map((t) => ({ id: t.id }));
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const talents = await fetchTalents();
+  return talents.map((t) => ({ id: t.id }));
 }
 
-export default function TalentDetailPage({
+export default async function TalentDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const talent = dummyTalents.find((t) => t.id === params.id);
+  const talent = await fetchTalentById(params.id);
   if (!talent) notFound();
 
   return (

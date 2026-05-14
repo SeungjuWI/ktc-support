@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { dummyTalents } from "@/lib/dummy-talents";
 import { Talent } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
 import { TalentCard } from "@/app/components/talent/TalentCard";
 import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
 
@@ -211,7 +211,7 @@ function CompareSection() {
   );
 }
 
-function PreviewSection({ talents, onSelectTalent }: { talents: typeof dummyTalents; onSelectTalent: (t: typeof dummyTalents[number]) => void }) {
+function PreviewSection({ talents, onSelectTalent }: { talents: Talent[]; onSelectTalent: (t: Talent) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const visible = useInView(ref, 0.4);
   const [showTitle, setShowTitle] = useState(false);
@@ -289,11 +289,20 @@ function CtaSection() {
 }
 
 export default function LandingPage() {
-  const previewTalents = dummyTalents
-    .filter((t) => t.availability !== "employed")
-    .slice(0, 4);
-
+  const [previewTalents, setPreviewTalents] = useState<Talent[]>([]);
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("talents")
+      .select("*")
+      .neq("availability", "employed")
+      .order("ovr_score", { ascending: false })
+      .limit(4)
+      .then(({ data }) => {
+        if (data) setPreviewTalents(data as Talent[]);
+      });
+  }, []);
 
   const stepsRef = useRef<HTMLDivElement>(null);
   const stepsVisible = useInView(stepsRef, 0.3);
