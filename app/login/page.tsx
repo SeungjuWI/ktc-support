@@ -20,17 +20,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        getUserProfile(user.id).then((p) => {
-          setProfile(p);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
+    async function loadSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        const p = await getUserProfile(u.id);
+        setProfile(p);
       }
-    });
+      setLoading(false);
+    }
+
+    loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -39,8 +40,10 @@ export default function LoginPage() {
         if (u) {
           const p = await getUserProfile(u.id);
           setProfile(p);
+          setLoading(false);
         } else {
           setProfile(null);
+          setLoading(false);
         }
       }
     );
@@ -124,6 +127,37 @@ export default function LoginPage() {
                 </Link>
               </div>
             </>
+          )}
+
+          {/* 로그인 됨 - 프로필 로딩 실패 */}
+          {user && !profile && (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">
+                <span className="text-[22px] font-medium text-gray-400">
+                  {user.email?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              </div>
+              <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-2">
+                로그인 완료
+              </h1>
+              <p className="text-[14px] text-gray-500 mb-6">
+                {user.email}
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/talents"
+                  className="w-full py-3.5 bg-blue-500 text-white rounded-xl text-[15px] font-medium hover:bg-blue-600 active:scale-[0.98] transition text-center"
+                >
+                  인재 둘러보기
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
+            </div>
           )}
 
           {/* 로그인 됨 - 승인 대기 */}
