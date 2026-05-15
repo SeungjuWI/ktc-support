@@ -58,6 +58,95 @@ body {
 .animate-delay-3 { animation-delay: 1.2s; }
 .animate-delay-4 { animation-delay: 1.6s; }
 
+/* ─── 평가기준 페이지 모션 ─── */
+
+/* 스텝 전환: 다음으로 */
+@keyframes criteriaSlideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* 스텝 전환: 이전으로 */
+@keyframes criteriaSlideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.criteria-slide-next {
+  animation: criteriaSlideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.criteria-slide-prev {
+  animation: criteriaSlideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 자식 요소 순차 등장 */
+@keyframes criteriaItemIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.criteria-stagger > * {
+  opacity: 0;
+  animation: criteriaItemIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.criteria-stagger > *:nth-child(1) { animation-delay: 0.06s; }
+.criteria-stagger > *:nth-child(2) { animation-delay: 0.12s; }
+.criteria-stagger > *:nth-child(3) { animation-delay: 0.18s; }
+.criteria-stagger > *:nth-child(4) { animation-delay: 0.24s; }
+.criteria-stagger > *:nth-child(5) { animation-delay: 0.30s; }
+.criteria-stagger > *:nth-child(6) { animation-delay: 0.36s; }
+.criteria-stagger > *:nth-child(7) { animation-delay: 0.42s; }
+.criteria-stagger > *:nth-child(8) { animation-delay: 0.48s; }
+.criteria-stagger > *:nth-child(9) { animation-delay: 0.54s; }
+.criteria-stagger > *:nth-child(10) { animation-delay: 0.60s; }
+
+/* R2 점수 바 채움 */
+@keyframes criteriaBarFill {
+  from { width: 0%; }
+}
+.criteria-bar-fill {
+  animation: criteriaBarFill 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.3s;
+}
+
+/* 숫자 카운트업 팝 */
+@keyframes criteriaPop {
+  0%  { opacity: 0; transform: scale(0.6); }
+  60% { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.criteria-pop {
+  animation: criteriaPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 도넛: conic reveal mask */
+@property --donut-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes donutSweep {
+  from { --donut-angle: 0deg; }
+  to { --donut-angle: 360deg; }
+}
+.donut-reveal {
+  animation: donutSweep 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+  mask: conic-gradient(from 0deg, #000 var(--donut-angle), transparent var(--donut-angle));
+  -webkit-mask: conic-gradient(from 0deg, #000 var(--donut-angle), transparent var(--donut-angle));
+}
+
+/* 도넛 광택 */
+@keyframes donutShine {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 도넛 중앙 텍스트 */
+@keyframes donutTextPop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* 프로그레스 바 채움 */
 @keyframes barFill {
   from { width: 0%; }

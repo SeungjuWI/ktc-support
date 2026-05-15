@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Talent } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile } from "@/lib/supabase-auth";
+import Link from "next/link";
 import { TalentCard } from "@/app/components/talent/TalentCard";
 import { FilterChips } from "@/app/components/talent/FilterChips";
 import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
@@ -52,10 +53,23 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
           <h1 className="text-[22px] font-medium text-gray-900 tracking-tight">
             베트남 IT 인재
           </h1>
-          <p className="text-[14px] text-gray-500 mt-1">
-            지금 합류 가능한 인재{" "}
-            <span className="text-blue-500 font-medium">{availableCount}명</span>
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-[14px] text-gray-500">
+              지금 합류 가능한 인재{" "}
+              <span className="text-blue-500 font-medium">{availableCount}명</span>
+            </p>
+            <Link
+              href="/talents/criteria"
+              className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-gray-700 transition-colors border-[0.5px] border-gray-200 rounded-full px-2.5 py-1"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
+                <path d="M8 7V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <circle cx="8" cy="5.5" r="0.75" fill="currentColor"/>
+              </svg>
+              평가기준
+            </Link>
+          </div>
         </div>
 
         {/* 필터 칩 */}
