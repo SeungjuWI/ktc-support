@@ -3,28 +3,29 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { signOut } from "@/lib/supabase-auth";
+import { signOut, getUserProfile } from "@/lib/supabase-auth";
 
 export function Header() {
-  const [user, setUser] = useState<{ email?: string; avatar?: string } | null>(null);
+  const [user, setUser] = useState<{ email?: string; avatar?: string; isAdmin?: boolean } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
+    async function loadUser(u: { id: string; email?: string; user_metadata: Record<string, string> }) {
+      const profile = await getUserProfile(u.id);
+      setUser({
+        email: u.email,
+        avatar: u.user_metadata?.avatar_url || u.user_metadata?.picture,
+        isAdmin: profile?.role === "admin" || profile?.role === "super_admin",
+      });
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          email: session.user.email,
-          avatar: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-        });
-      }
+      if (session?.user) loadUser(session.user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser({
-          email: session.user.email,
-          avatar: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-        });
+        loadUser(session.user);
       } else {
         setUser(null);
       }
@@ -89,6 +90,15 @@ export function Header() {
                   >
                     내 계정
                   </Link>
+                  {user.isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowMenu(false)}
+                      className="block px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50"
+                    >
+                      관리자 대시보드
+                    </Link>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50"

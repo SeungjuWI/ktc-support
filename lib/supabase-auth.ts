@@ -33,7 +33,7 @@ export async function getUserProfile(userId: string) {
     email: string
     name: string
     avatar_url: string
-    role: 'admin' | 'user'
+    role: 'super_admin' | 'admin' | 'user'
     status: 'pending' | 'approved' | 'rejected'
   }
 }

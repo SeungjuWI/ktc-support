@@ -7,7 +7,7 @@ import { signInWithGoogle, signOut, getUserProfile } from "@/lib/supabase-auth";
 import type { User } from "@supabase/supabase-js";
 
 type UserProfile = {
-  role: "admin" | "user";
+  role: "super_admin" | "admin" | "user";
   status: "pending" | "approved" | "rejected";
   name: string;
   email: string;
@@ -55,6 +55,13 @@ export default function LoginPage() {
     const { error } = await signInWithGoogle();
     if (error) alert("로그인 중 오류가 발생했습니다: " + error.message);
   }
+
+  // 승인된 유저는 바로 인재열람으로 이동
+  useEffect(() => {
+    if (user && profile?.status === "approved") {
+      window.location.href = "/talents";
+    }
+  }, [user, profile]);
 
   async function handleSignOut() {
     await signOut();
@@ -186,13 +193,13 @@ export default function LoginPage() {
                 </svg>
               </div>
               <h1 className="text-[22px] font-medium text-gray-900 tracking-tight mb-3">
-                승인 대기 중
+                가입 신청이 완료되었습니다
               </h1>
-              <p className="text-[14px] text-gray-500 mb-1">
+              <p className="text-[14px] text-gray-500 mb-2">
                 {profile.email}
               </p>
-              <p className="text-[14px] text-gray-500 mb-8">
-                관리자가 가입을 검토 중입니다.<br />승인되면 인재 열람이 가능합니다.
+              <p className="text-[14px] text-gray-500 leading-relaxed mb-8">
+                현재 승인 대기 중입니다.<br />승인이 완료되면 메일로 안내드리겠습니다.
               </p>
               <button
                 onClick={handleSignOut}
@@ -252,7 +259,7 @@ export default function LoginPage() {
                 >
                   인재 둘러보기
                 </Link>
-                {profile.role === "admin" && (
+                {(profile.role === "admin" || profile.role === "super_admin") && (
                   <Link
                     href="/admin"
                     className="w-full py-3.5 bg-gray-900 text-white rounded-xl text-[15px] font-medium hover:bg-gray-800 active:scale-[0.98] transition text-center"

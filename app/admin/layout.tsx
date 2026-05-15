@@ -8,6 +8,7 @@ import { getCurrentUser, getUserProfile } from "@/lib/supabase-auth";
 const NAV_ITEMS = [
   { href: "/admin", label: "사용자 관리", icon: "users" },
   { href: "/admin/talents", label: "인재 관리", icon: "talents" },
+  { href: "/admin/roles", label: "권한 안내", icon: "roles" },
 ];
 
 function NavIcon({ type }: { type: string }) {
@@ -17,6 +18,13 @@ function NavIcon({ type }: { type: string }) {
         <circle cx="9" cy="7" r="4" />
         <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
         <path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.85" />
+      </svg>
+    );
+  }
+  if (type === "roles") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     );
   }
@@ -40,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const user = await getCurrentUser();
       if (!user) { window.location.href = "/login"; return; }
       const profile = await getUserProfile(user.id);
-      if (!profile || profile.role !== "admin") { window.location.href = "/"; return; }
+      if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) { window.location.href = "/"; return; }
       setAuthorized(true);
       setLoading(false);
     }
@@ -71,8 +79,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <span className="text-[12px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">관리자</span>
           </div>
-          <Link href="/login" className="text-[14px] text-gray-500 hover:text-gray-700 transition-colors">
-            내 계정
+          <Link href="/login" className="w-8 h-8 rounded-full border-[1.5px] border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+            <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="11" r="4.5" stroke="#8B95A1" strokeWidth="2"/>
+              <path d="M5.5 24c0-4.14 3.82-7.5 8.5-7.5s8.5 3.36 8.5 7.5" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </Link>
         </div>
         <div className="h-[0.5px] bg-gray-200/80" />
