@@ -71,6 +71,22 @@ export default function LoginPage() {
     setProfile(null);
   }
 
+  async function handleDeleteAccount() {
+    if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+    if (!user) return;
+
+    await fetch("/api/delete-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id }),
+    });
+
+    await signOut();
+    setUser(null);
+    setProfile(null);
+    window.location.href = "/";
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
@@ -262,12 +278,17 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* 로그아웃 */}
               <button
                 onClick={handleSignOut}
                 className="w-full py-3.5 bg-white border-[0.5px] border-gray-200/60 rounded-2xl text-[14px] text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 로그아웃
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="w-full mt-4 text-[12px] text-gray-400 hover:text-red-500 transition-colors"
+              >
+                회원 탈퇴
               </button>
             </div>
           )}
