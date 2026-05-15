@@ -57,7 +57,7 @@ export function HeroIllustration() {
       <g className="landing-badge">
         <rect x="210" y="180" width="80" height="56" rx="14" fill="white" stroke="#E5E8EB" strokeWidth="0.5" />
         <text x="250" y="204" textAnchor="middle" fill="#3182F6" fontSize="18" fontWeight="500" style={{ fontFamily: "inherit" }}>92</text>
-        <text x="250" y="222" textAnchor="middle" fill="#8B95A1" fontSize="9" style={{ fontFamily: "inherit" }}>기술력</text>
+        <text x="250" y="222" textAnchor="middle" fill="#8B95A1" fontSize="9" style={{ fontFamily: "inherit" }}>실무력</text>
       </g>
 
       {/* 작은 점 장식 */}

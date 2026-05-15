@@ -46,10 +46,10 @@ const DEFAULT_DATA: TalentFormData = {
 };
 
 const ABILITY_LABELS: Record<keyof Abilities, string> = {
-  technical: "기술력",
+  technical: "실무력",
   korean: "한국어",
   english: "영어",
-  collaboration: "협업",
+  collaboration: "협업·소통",
   stability: "안정성",
   growth: "성장성",
 };

@@ -2,7 +2,7 @@
 
 import { Abilities } from "@/lib/types";
 
-const LABELS = ["기술력", "한국어", "영어", "협업", "안정성", "성장성"];
+const LABELS = ["실무력", "한국어", "영어", "협업·소통", "안정성", "성장성"];
 const KEYS: (keyof Abilities)[] = [
   "technical",
   "korean",
