@@ -168,17 +168,13 @@ export default function AdminUsersPage() {
                 </span>
 
                 <div className="flex items-center gap-2">
-                  {/* 총 관리자만 역할 변경 가능, 본인(super_admin)은 변경 불가 */}
-                  {isSuperAdmin && u.role !== "super_admin" && tab === "approved" && (
+                  {/* 총 관리자만 일반 유저를 관리자로 임명 가능 */}
+                  {isSuperAdmin && u.role === "user" && tab === "approved" && (
                     <button
-                      onClick={() => updateRole(u.id, u.role === "admin" ? "user" : "admin")}
-                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                        u.role === "admin"
-                          ? "bg-blue-50 text-blue-500 hover:bg-blue-100"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      }`}
+                      onClick={() => updateRole(u.id, "admin")}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors bg-gray-100 text-gray-500 hover:bg-gray-200"
                     >
-                      {u.role === "admin" ? "관리자 해제" : "관리자 임명"}
+                      관리자 임명
                     </button>
                   )}
 
@@ -199,9 +195,9 @@ export default function AdminUsersPage() {
                     </>
                   )}
 
-                  {tab === "approved" && u.role !== "super_admin" && (
+                  {tab === "approved" && u.role === "admin" && isSuperAdmin && (
                     <button
-                      onClick={() => updateStatus(u.id, "rejected")}
+                      onClick={() => updateRole(u.id, "user")}
                       className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors"
                     >
                       권한 해제

@@ -129,11 +129,17 @@ export default function AdminTalentsPage() {
           {filtered.map((t) => (
             <div
               key={t.id}
-              className={`bg-white border-[0.5px] border-gray-200/60 rounded-2xl p-5 transition-opacity ${
-                !t.published ? "opacity-60" : ""
-              }`}
+              className="bg-white border-[0.5px] border-gray-200/60 rounded-2xl p-5 relative overflow-hidden"
             >
-              <div className="flex items-start gap-4">
+              {!t.published && (
+                <>
+                  <div className="absolute inset-0 bg-gray-900/5 z-[1] rounded-2xl" />
+                  <span className="absolute top-3 left-3 z-[2] text-[11px] font-medium text-white bg-gray-900/70 px-2.5 py-1 rounded-full">
+                    비공개
+                  </span>
+                </>
+              )}
+              <div className={`flex items-start gap-4 ${!t.published ? "opacity-40" : ""}`}>
                 {/* 아바타 */}
                 {t.photo_url ? (
                   <img src={t.photo_url} alt="" className="w-[42px] h-[42px] rounded-full object-cover flex-shrink-0" />
@@ -151,13 +157,6 @@ export default function AdminTalentsPage() {
                     <span className={`text-[11px] font-medium px-2 py-[2px] rounded-full ${getGradeStyle(t.ovr_grade)}`}>
                       {t.ovr_grade} {t.ovr_score}
                     </span>
-                    <span className={`text-[11px] px-2 py-[2px] rounded-full font-medium ${
-                      t.published
-                        ? "bg-[#E8F5E9] text-[#1D9E75]"
-                        : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {t.published ? "게시중" : "비공개"}
-                    </span>
                   </div>
                   <p className="text-[13px] text-gray-500">
                     {t.years_exp}년차 · {t.location} · {getAvailabilityLabel(t.availability)} · {t.desired_salary_krw}만원/월
@@ -170,9 +169,10 @@ export default function AdminTalentsPage() {
                     ))}
                   </div>
                 </div>
+              </div>
 
-                {/* 액션 */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+              {/* 액션 - 항상 선명하게 */}
+              <div className="flex items-center justify-end gap-2 mt-3 relative z-[2]">
                   <button
                     onClick={() => togglePublished(t.id, t.published)}
                     className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
@@ -199,7 +199,6 @@ export default function AdminTalentsPage() {
                   >
                     {deleting === t.id ? "확인" : "삭제"}
                   </button>
-                </div>
               </div>
             </div>
           ))}
