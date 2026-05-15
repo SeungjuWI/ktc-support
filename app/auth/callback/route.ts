@@ -10,8 +10,20 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data: { session } } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('status')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile || profile.status !== 'approved') {
+        return NextResponse.redirect(`${origin}/login`)
+      }
+    }
   }
 
-  return NextResponse.redirect(`${origin}/login`)
+  return NextResponse.redirect(`${origin}/talents`)
 }

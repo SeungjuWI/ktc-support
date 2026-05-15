@@ -57,13 +57,6 @@ export default function LoginPage() {
     if (error) alert("로그인 중 오류가 발생했습니다: " + error.message);
   }
 
-  // OAuth 콜백으로 돌아온 경우에만 인재열람으로 이동
-  useEffect(() => {
-    const isCallback = window.location.hash.includes("access_token") || document.referrer.includes("accounts.google");
-    if (isCallback && user && profile?.status === "approved") {
-      window.location.href = "/talents";
-    }
-  }, [user, profile]);
 
   async function handleSignOut() {
     await signOut();

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Talent } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { getUserProfile } from "@/lib/supabase-auth";
 import { TalentCard } from "@/app/components/talent/TalentCard";
 import { FilterChips } from "@/app/components/talent/FilterChips";
 import { TalentDetailModal } from "@/app/components/talent/TalentDetailModal";
@@ -13,18 +15,24 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
     (t) => t.availability === "immediate"
   ).length;
 
+  const router = useRouter();
   const [selected, setSelected] = useState<Talent | null>(null);
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
-        window.location.href = "/login";
-      } else {
-        setAuthed(true);
+        router.replace("/login");
+        return;
       }
+      const profile = await getUserProfile(session.user.id);
+      if (!profile || profile.status !== "approved") {
+        router.replace("/login");
+        return;
+      }
+      setAuthed(true);
     });
-  }, []);
+  }, [router]);
 
   if (!authed) {
     return (
