@@ -1,53 +1,24 @@
 import { Talent, toInitials } from "@/lib/types";
 
-function getGradeStyle(grade: string) {
-  switch (grade) {
-    case "S":
-      return "bg-grade-s-bg text-grade-s-text";
-    case "A":
-      return "bg-grade-a-bg text-grade-a-text";
-    default:
-      return "bg-grade-b-bg text-grade-b-text";
-  }
+function getScoreStyle(score: number) {
+  if (score >= 85) return "bg-grade-s-bg text-grade-s-text";
+  if (score >= 70) return "bg-grade-a-bg text-grade-a-text";
+  return "bg-grade-b-bg text-grade-b-text";
 }
 
-function getAvailabilityInfo(availability: string) {
-  switch (availability) {
-    case "immediate":
-      return { label: "즉시 합류", dotColor: "bg-status-available" };
-    case "negotiable":
-      return { label: "협의 가능", dotColor: "bg-status-negotiable" };
-    default:
-      return { label: "현직", dotColor: "bg-status-employed" };
-  }
-}
-
-function KoreanStars({ level }: { level: number }) {
-  return (
-    <div className="flex gap-[1px] items-center">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width="10" height="10" viewBox="0 0 10 10">
-          <path
-            d="M5 0.5L6.1 3.7H9.5L6.7 5.7L7.8 8.9L5 6.9L2.2 8.9L3.3 5.7L0.5 3.7H3.9L5 0.5Z"
-            fill={i < level ? "#3182F6" : "#E5E8EB"}
-          />
-        </svg>
-      ))}
-    </div>
-  );
-}
+const VERIFY_COLORS: Record<string, string> = {
+  "서류 합격": "#3182F6",
+  "인터뷰 합격": "#1D9E75",
+};
 
 export function TalentCard({ talent, blurPhoto }: { talent: Talent; blurPhoto?: boolean }) {
-  const status = getAvailabilityInfo(talent.availability);
-  const isEmployed = talent.availability === "employed";
+  const verification = (talent as unknown as { verification?: string[] }).verification || [];
+  const skills = (talent.top_skills?.[0] && talent.top_skills[0] !== "")
+    ? talent.top_skills.filter(Boolean)
+    : (talent.tags || []).slice(0, 3);
 
   return (
-    <div
-      className={`bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98] ${
-        isEmployed ? "opacity-[0.72]" : ""
-      }`}
-    >
-      {/* 상단: 아바타 + OVR 뱃지 */}
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98]">
       <div className="flex items-start justify-between mb-3">
         {talent.photo_url ? (
           <img src={talent.photo_url} alt="" className={`w-[42px] h-[42px] rounded-full object-cover ${blurPhoto ? "blur-[2px]" : ""}`} />
@@ -58,54 +29,38 @@ export function TalentCard({ talent, blurPhoto }: { talent: Talent; blurPhoto?: 
             </span>
           </div>
         )}
-        <span
-          className={`text-[12px] font-medium px-2 py-[3px] rounded-full ${getGradeStyle(talent.ovr_grade)}`}
-        >
-          {talent.ovr_grade} {talent.ovr_score}
+        <span className={`text-[13px] font-medium px-2.5 py-[3px] rounded-full ${getScoreStyle(talent.ovr_score)}`}>
+          {talent.ovr_score}
         </span>
       </div>
 
-      {/* 직무 + 연차/지역 */}
-      <p className="text-[15px] font-medium text-gray-900 leading-tight">
-        {talent.role}
-      </p>
+      <p className="text-[15px] font-medium text-gray-900 leading-tight">{talent.role}</p>
       <p className="text-[12px] text-gray-500 mt-[2px]">
-        {talent.years_exp}년차 · {talent.location}
+        {talent.years_exp > 0 ? `${talent.years_exp}년차` : "신입"} · {talent.location}
       </p>
 
       {/* 스킬 태그 */}
-      <div className="flex gap-1 mt-[10px] flex-wrap">
-        {talent.top_skills.map((skill) => (
-          <span
-            key={skill}
-            className="text-[11px] text-gray-600 bg-gray-100 px-[7px] py-[3px] rounded-full leading-[18px] inline-flex items-center"
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
+      {skills.length > 0 && (
+        <div className="flex gap-1 mt-[10px] flex-wrap">
+          {skills.slice(0, 3).map((skill) => (
+            <span key={skill} className="text-[11px] text-gray-600 bg-gray-100 px-[7px] py-[3px] rounded-full leading-[18px] inline-flex items-center">
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
 
-      {/* 한국어 */}
-      <div className="flex items-center gap-[6px] mt-[10px]">
-        <span className="text-[11px] text-gray-500">한국어</span>
-        <KoreanStars level={talent.korean_level} />
-      </div>
-
-      {/* 하단: 합류 상태 & 연봉 */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-        <span className={`text-[11px] px-2 py-[2px] rounded-full font-medium ${
-          talent.availability === "immediate"
-            ? "bg-[#E8F5E9] text-[#1D9E75]"
-            : talent.availability === "negotiable"
-              ? "bg-gray-100 text-gray-500"
-              : "bg-gray-100 text-gray-400"
-        }`}>
-          {status.label}
-        </span>
-        <span className="text-[13px] font-medium text-gray-900">
-          {talent.desired_salary_krw}만원
-        </span>
-      </div>
+      {/* 하단: 검증 칩 */}
+      {verification.length > 0 && (
+        <div className="flex gap-1.5 mt-3 pt-3 border-t border-gray-100">
+          {verification.map((chip) => (
+            <span key={chip} className="text-[10px] px-[7px] py-[2px] rounded-full leading-[16px] inline-flex items-center"
+              style={{ backgroundColor: (VERIFY_COLORS[chip] || "#8B95A1") + "15", color: VERIFY_COLORS[chip] || "#8B95A1" }}>
+              {chip}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

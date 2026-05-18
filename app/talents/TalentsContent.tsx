@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Talent } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +13,42 @@ import { Header } from "@/app/components/Header";
 import { getScrapCount } from "@/lib/scraps";
 
 export default function TalentsContent({ talents }: { talents: Talent[] }) {
-  const availableCount = talents.filter(
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
+  const [sortOption, setSortOption] = useState("recommended");
+
+  const filteredTalents = useMemo(() => {
+    let result = talents;
+
+    // 직무 필터
+    if (roleFilter.length > 0) {
+      result = result.filter((t) => roleFilter.includes(t.role));
+    }
+
+    // 정렬
+    result = [...result].sort((a, b) => {
+      switch (sortOption) {
+        case "salary_asc":
+          return a.desired_salary_krw - b.desired_salary_krw;
+        case "salary_desc":
+          return b.desired_salary_krw - a.desired_salary_krw;
+        case "exp_desc":
+          return b.years_exp - a.years_exp;
+        case "exp_asc":
+          return a.years_exp - b.years_exp;
+        case "korean_desc":
+          return b.korean_level - a.korean_level;
+        case "newest":
+          return 0; // DB 순서 유지 (최신순 정렬은 서버에서)
+        case "recommended":
+        default:
+          return b.ovr_score - a.ovr_score;
+      }
+    });
+
+    return result;
+  }, [talents, roleFilter, sortOption]);
+
+  const availableCount = filteredTalents.filter(
     (t) => t.availability === "immediate"
   ).length;
 
@@ -82,34 +117,32 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
           </div>
         </div>
 
-        {/* 필터 칩 */}
+        {/* 필터 칩 + 정렬 */}
         <div className="mb-5">
-          <FilterChips />
+          <FilterChips
+            onRoleChange={(roles) => setRoleFilter(roles)}
+            onSortChange={(sort) => setSortOption(sort)}
+          />
         </div>
 
-        {/* 정렬 헤더 */}
+        {/* 결과 헤더 */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[12px] text-gray-500">{talents.length}명 표시</span>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/talents/scraps"
-              className="flex items-center gap-1.5 text-[12px] text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 3h10a1 1 0 011 1v13.5l-6-3.5-6 3.5V4a1 1 0 011-1z"/>
-              </svg>
-              스크랩{scrapCount > 0 && ` ${scrapCount}`}
-            </Link>
-            <button className="text-[12px] text-gray-600 hover:text-gray-900 transition-colors">
-              추천순 ▼
-            </button>
-          </div>
+          <span className="text-[12px] text-[#8B95A1]">{filteredTalents.length}명 표시</span>
+          <Link
+            href="/talents/scraps"
+            className="flex items-center gap-1.5 text-[12px] text-[#6B7684] hover:text-[#191F28] transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 3h10a1 1 0 011 1v13.5l-6-3.5-6 3.5V4a1 1 0 011-1z"/>
+            </svg>
+            스크랩{scrapCount > 0 && ` ${scrapCount}`}
+          </Link>
         </div>
 
         {/* 카드 그리드 */}
         <div className="relative">
           <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[10px] ${!authed ? "blur-[6px] select-none" : ""}`}>
-            {talents.map((talent) => (
+            {filteredTalents.map((talent) => (
               <div
                 key={talent.id}
                 onClick={() => {

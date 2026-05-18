@@ -17,7 +17,6 @@ export const dummyTalents: Talent[] = [
       "한국 기업 협업 경험 풍부. 의사소통 명료하고 일정 준수 우수.",
     abilities: {
       technical: 88,
-      korean: 85,
       english: 78,
       collaboration: 92,
       stability: 90,
@@ -53,7 +52,6 @@ export const dummyTalents: Talent[] = [
       "대규모 트래픽 처리 경험 보유. 꼼꼼한 성격으로 코드 리뷰에 적극적.",
     abilities: {
       technical: 90,
-      korean: 72,
       english: 82,
       collaboration: 78,
       stability: 88,
@@ -89,7 +87,6 @@ export const dummyTalents: Talent[] = [
       "차분하고 논리적인 디자이너. 한국어 능통하여 커뮤니케이션 비용 매우 낮음.",
     abilities: {
       technical: 82,
-      korean: 95,
       english: 70,
       collaboration: 90,
       stability: 85,
@@ -125,7 +122,6 @@ export const dummyTalents: Talent[] = [
       "프론트와 백엔드를 균형 있게 다루는 타입. 단독 작업보다 팀 협업에서 강점.",
     abilities: {
       technical: 80,
-      korean: 55,
       english: 78,
       collaboration: 82,
       stability: 75,
@@ -161,7 +157,6 @@ export const dummyTalents: Talent[] = [
       "빠른 학습 속도와 문제 해결 능력이 강점. 안정성보다는 성장에 무게.",
     abilities: {
       technical: 78,
-      korean: 68,
       english: 80,
       collaboration: 72,
       stability: 65,
@@ -196,7 +191,6 @@ export const dummyTalents: Talent[] = [
       "인프라 전반에 대한 깊은 이해. 장애 대응이 빠르고 문서화를 잘함.",
     abilities: {
       technical: 85,
-      korean: 80,
       english: 75,
       collaboration: 76,
       stability: 92,
@@ -232,7 +226,6 @@ export const dummyTalents: Talent[] = [
       "성실하고 피드백 수용 자세가 좋음. 한국어는 기초 수준이나 영어 소통 가능.",
     abilities: {
       technical: 72,
-      korean: 35,
       english: 75,
       collaboration: 78,
       stability: 70,
@@ -267,7 +260,6 @@ export const dummyTalents: Talent[] = [
       "데이터 기반 의사결정에 강점. 현직 중이나 좋은 기회에 이직 의향 있음.",
     abilities: {
       technical: 78,
-      korean: 50,
       english: 82,
       collaboration: 70,
       stability: 80,
@@ -303,7 +295,6 @@ export const dummyTalents: Talent[] = [
       "모바일 크로스플랫폼 개발 전문. 차분한 성격으로 장기 프로젝트에 적합.",
     abilities: {
       technical: 75,
-      korean: 65,
       english: 72,
       collaboration: 80,
       stability: 82,
@@ -338,7 +329,6 @@ export const dummyTalents: Talent[] = [
       "한국어 능통. 기술적으로는 성장 중이나 소통 능력이 뛰어나 팀 적응이 빠름.",
     abilities: {
       technical: 62,
-      korean: 92,
       english: 60,
       collaboration: 85,
       stability: 68,
@@ -373,7 +363,6 @@ export const dummyTalents: Talent[] = [
       "꼼꼼한 작업 스타일. 시스템 디자인보다 비주얼 디자인에 강점.",
     abilities: {
       technical: 65,
-      korean: 78,
       english: 62,
       collaboration: 75,
       stability: 72,
@@ -408,7 +397,6 @@ export const dummyTalents: Talent[] = [
       "테스트 자동화에 관심이 많은 주니어. 영어 소통 가능, 한국어는 학습 초기 단계.",
     abilities: {
       technical: 55,
-      korean: 30,
       english: 70,
       collaboration: 65,
       stability: 60,

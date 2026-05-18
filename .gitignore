@@ -13,6 +13,9 @@
 /.next/
 /out/
 
+# next cache clear on build
+
+
 # production
 /build
 

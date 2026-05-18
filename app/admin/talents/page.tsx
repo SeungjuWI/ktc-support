@@ -52,6 +52,16 @@ export default function AdminTalentsPage() {
     );
   }
 
+  async function publishAll() {
+    await supabase.from("talents").update({ published: true, updated_at: new Date().toISOString() }).eq("published", false);
+    setTalents((prev) => prev.map((t) => ({ ...t, published: true })));
+  }
+
+  async function unpublishAll() {
+    await supabase.from("talents").update({ published: false, updated_at: new Date().toISOString() }).eq("published", true);
+    setTalents((prev) => prev.map((t) => ({ ...t, published: false })));
+  }
+
   async function deleteTalent(id: string) {
     if (deleting === id) {
       await supabase.from("talents").delete().eq("id", id);
@@ -80,12 +90,20 @@ export default function AdminTalentsPage() {
             총 {talents.length}명 · 게시 {talents.filter((t) => t.published).length}명
           </p>
         </div>
-        <Link
-          href="/admin/talents/new"
-          className="px-4 py-2.5 bg-blue-500 text-white rounded-xl text-[14px] font-medium hover:bg-blue-600 active:scale-[0.98] transition-all"
-        >
-          + 인재 등록
-        </Link>
+        <div className="flex gap-2">
+          <button onClick={publishAll}
+            className="px-4 py-2.5 bg-[#3182F6] text-white rounded-xl text-[13px] hover:bg-[#2272EB] transition-colors">
+            전체 게시
+          </button>
+          <button onClick={unpublishAll}
+            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] hover:border-gray-300 transition-colors">
+            전체 비공개
+          </button>
+          <Link href="/admin/talents/new"
+            className="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] hover:bg-gray-800 transition-colors">
+            + 인재 등록
+          </Link>
+        </div>
       </div>
 
       {/* 필터 */}

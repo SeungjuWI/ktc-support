@@ -14,7 +14,7 @@ const LANDING_TALENTS: Talent[] = [
     desired_salary_krw: 150, availability: "immediate",
     ktc_comment: "한국 기업 협업 경험 풍부. 의사소통 명료하고 일정 준수 우수.",
     tags: ["한국어 비즈니스", "원격 가능", "한국 기업 경험"],
-    abilities: { technical: 88, korean: 85, english: 78, collaboration: 92, stability: 90, growth: 86 },
+    abilities: { technical: 88, english: 78, collaboration: 92, stability: 90, growth: 86 },
     detailed_skills: [
       { name: "React", score: 92, type: "core" }, { name: "TypeScript", score: 85, type: "core" },
       { name: "Next.js", score: 80, type: "core" }, { name: "Tailwind CSS", score: 78, type: "sub" },
@@ -31,7 +31,7 @@ const LANDING_TALENTS: Talent[] = [
     desired_salary_krw: 180, availability: "negotiable",
     ktc_comment: "대규모 트래픽 처리 경험 보유. 꼼꼼한 성격으로 코드 리뷰에 적극적.",
     tags: ["대규모 트래픽", "MSA 경험", "코드 리뷰 문화"],
-    abilities: { technical: 90, korean: 72, english: 82, collaboration: 78, stability: 88, growth: 80 },
+    abilities: { technical: 90, english: 82, collaboration: 78, stability: 88, growth: 80 },
     detailed_skills: [
       { name: "Java", score: 90, type: "core" }, { name: "Spring Boot", score: 88, type: "core" },
       { name: "MySQL", score: 82, type: "core" }, { name: "AWS", score: 75, type: "sub" },
@@ -48,7 +48,7 @@ const LANDING_TALENTS: Talent[] = [
     desired_salary_krw: 130, availability: "immediate",
     ktc_comment: "차분하고 논리적인 디자이너. 한국어 능통하여 커뮤니케이션 비용 매우 낮음.",
     tags: ["한국어 능통", "디자인 시스템", "스타트업 경험"],
-    abilities: { technical: 82, korean: 95, english: 70, collaboration: 90, stability: 85, growth: 88 },
+    abilities: { technical: 82, english: 70, collaboration: 90, stability: 85, growth: 88 },
     detailed_skills: [
       { name: "Figma", score: 95, type: "core" }, { name: "Prototyping", score: 88, type: "core" },
       { name: "Design System", score: 82, type: "core" }, { name: "HTML/CSS", score: 65, type: "sub" },
@@ -65,7 +65,7 @@ const LANDING_TALENTS: Talent[] = [
     desired_salary_krw: 140, availability: "negotiable",
     ktc_comment: "프론트와 백엔드를 균형 있게 다루는 타입. 팀 협업에서 강점.",
     tags: ["풀스택", "팀 플레이어", "원격 가능"],
-    abilities: { technical: 80, korean: 55, english: 78, collaboration: 82, stability: 75, growth: 76 },
+    abilities: { technical: 80, english: 78, collaboration: 82, stability: 75, growth: 76 },
     detailed_skills: [
       { name: "Node.js", score: 82, type: "core" }, { name: "React", score: 78, type: "core" },
       { name: "PostgreSQL", score: 75, type: "core" }, { name: "AWS", score: 65, type: "sub" },
@@ -132,9 +132,8 @@ function WhyVietnam() {
           {items.map((item, i) => (
             <div
               key={item.num}
-              className={`text-center px-5 py-7 rounded-2xl border-[1px] border-gray-200/30 bg-[#F7F8FA] transition-all duration-500 ${
-                showItems[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
+              className={`text-center px-5 py-7 rounded-2xl border-[1px] border-gray-200/30 bg-[#F7F8FA] transition-all duration-500 ${showItems[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
             >
               <div className="w-28 h-28 mx-auto mb-3">
                 <img src={item.img} alt={item.num} className="w-full h-full object-contain" />
@@ -174,18 +173,16 @@ function SubHero() {
           {lines.map((text, i) => (
             <p
               key={text}
-              className={`text-[28px] md:text-[36px] font-[600] text-gray-900 leading-[1.4] tracking-tight transition-all duration-700 ${
-                show[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
+              className={`text-[28px] md:text-[36px] font-[600] text-gray-900 leading-[1.4] tracking-tight transition-all duration-700 ${show[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
             >
               {text}
             </p>
           ))}
         </div>
         <p
-          className={`text-[22px] md:text-[28px] text-gray-500 leading-relaxed transition-all duration-700 ${
-            show[3] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`text-[22px] md:text-[28px] text-gray-500 leading-relaxed transition-all duration-700 ${show[3] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <span className="text-gray-900 font-medium">모두 완료된 인재</span>만 보여드립니다.
           <br />
@@ -253,9 +250,8 @@ function CompareSection() {
                 <p className="text-[15px] font-medium text-gray-900 mb-3">{row.label}</p>
                 <div className="flex items-center gap-4">
                   {/* 기존 */}
-                  <div className={`flex-1 text-center rounded-xl px-4 py-4 border-[1.5px] border-gray-200 transition-all duration-500 ${
-                    phase >= 2 ? "opacity-40" : "bg-white"
-                  }`}>
+                  <div className={`flex-1 text-center rounded-xl px-4 py-4 border-[1.5px] border-gray-200 transition-all duration-500 ${phase >= 2 ? "opacity-40" : "bg-white"
+                    }`}>
                     <p className="text-[15px] text-gray-700">{row.old}</p>
                   </div>
 
@@ -265,12 +261,10 @@ function CompareSection() {
                   </svg>
 
                   {/* 베팀 */}
-                  <div className={`flex-1 text-center rounded-xl px-4 py-4 border-[2px] transition-all duration-500 ${
-                    phase >= 2 ? "border-blue-500 bg-blue-50/60 scale-[1.03]" : "border-gray-200 bg-white opacity-40"
-                  }`}>
-                    <p className={`text-[15px] font-[600] transition-all duration-500 ${
-                      phase >= 2 ? "text-blue-500" : "text-gray-300"
-                    }`}>{row.nw}</p>
+                  <div className={`flex-1 text-center rounded-xl px-4 py-4 border-[2px] transition-all duration-500 ${phase >= 2 ? "border-blue-500 bg-blue-50/60 scale-[1.03]" : "border-gray-200 bg-white opacity-40"
+                    }`}>
+                    <p className={`text-[15px] font-[600] transition-all duration-500 ${phase >= 2 ? "text-blue-500" : "text-gray-300"
+                      }`}>{row.nw}</p>
                   </div>
                 </div>
               </div>
@@ -455,28 +449,24 @@ export default function LandingPage() {
             ] as const).map((step, i) => (
               <div
                 key={step.num}
-                className={`rounded-2xl border-[1.5px] p-7 transition-all duration-500 ${
-                  stepShow[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                } ${
-                  step.color === "blue"
+                className={`rounded-2xl border-[1.5px] p-7 transition-all duration-500 ${stepShow[i] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  } ${step.color === "blue"
                     ? "border-blue-500 bg-blue-50/30"
                     : "border-gray-200 bg-white"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3 mb-4">
                   <span
-                    className={`w-9 h-9 rounded-full text-[14px] font-medium flex items-center justify-center ${
-                      step.color === "blue"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-300 text-white"
-                    }`}
+                    className={`w-9 h-9 rounded-full text-[14px] font-medium flex items-center justify-center ${step.color === "blue"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-300 text-white"
+                      }`}
                   >
                     {step.num}
                   </span>
                   <span
-                    className={`text-[13px] font-medium ${
-                      step.color === "blue" ? "text-blue-500" : "text-gray-400"
-                    }`}
+                    className={`text-[13px] font-medium ${step.color === "blue" ? "text-blue-500" : "text-gray-400"
+                      }`}
                   >
                     {step.tag}
                   </span>

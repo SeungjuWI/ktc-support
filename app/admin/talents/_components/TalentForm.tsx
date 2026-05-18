@@ -38,7 +38,7 @@ const DEFAULT_DATA: TalentFormData = {
   desired_salary_krw: 0,
   availability: "negotiable",
   ktc_comment: "",
-  abilities: { technical: 0, korean: 0, english: 0, collaboration: 0, stability: 0, growth: 0 },
+  abilities: { technical: 0, english: 0, collaboration: 0, stability: 0, growth: 0 },
   detailed_skills: [],
   career_history: [],
   tags: [],
@@ -47,7 +47,6 @@ const DEFAULT_DATA: TalentFormData = {
 
 const ABILITY_LABELS: Record<keyof Abilities, string> = {
   technical: "실무력",
-  korean: "한국어",
   english: "영어",
   collaboration: "협업·소통",
   stability: "안정성",

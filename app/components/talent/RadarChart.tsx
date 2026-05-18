@@ -2,15 +2,15 @@
 
 import { Abilities } from "@/lib/types";
 
-const LABELS = ["실무력", "한국어", "영어", "협업·소통", "안정성", "성장성"];
+const LABELS = ["실무력", "영어", "협업·소통", "안정성", "성장성"];
 const KEYS: (keyof Abilities)[] = [
   "technical",
-  "korean",
   "english",
   "collaboration",
   "stability",
   "growth",
 ];
+const SIDES = 5;
 
 const SIZE = 200;
 const CENTER = SIZE / 2;
@@ -28,7 +28,7 @@ function polarToCartesian(angle: number, radius: number) {
 function getPolygonPoints(values: number[], maxRadius: number) {
   return values
     .map((v, i) => {
-      const angle = (360 / values.length) * i;
+      const angle = (360 / SIDES) * i;
       const r = (v / 100) * maxRadius;
       const { x, y } = polarToCartesian(angle, r);
       return `${x},${y}`;
@@ -38,8 +38,8 @@ function getPolygonPoints(values: number[], maxRadius: number) {
 
 function getGridPolygon(level: number) {
   const r = (RADIUS / LEVELS) * (level + 1);
-  return Array.from({ length: 6 }, (_, i) => {
-    const angle = (360 / 6) * i;
+  return Array.from({ length: SIDES }, (_, i) => {
+    const angle = (360 / SIDES) * i;
     const { x, y } = polarToCartesian(angle, r);
     return `${x},${y}`;
   }).join(" ");
@@ -47,6 +47,10 @@ function getGridPolygon(level: number) {
 
 export function RadarChart({ abilities }: { abilities: Abilities }) {
   const values = KEYS.map((k) => abilities[k]);
+
+  // 값이 전부 0이면 차트 숨기기
+  if (values.every((v) => v === 0)) return null;
+
   const dataPoints = getPolygonPoints(values, RADIUS);
 
   return (
@@ -69,8 +73,8 @@ export function RadarChart({ abilities }: { abilities: Abilities }) {
         ))}
 
         {/* 축 선 */}
-        {Array.from({ length: 6 }, (_, i) => {
-          const angle = (360 / 6) * i;
+        {Array.from({ length: SIDES }, (_, i) => {
+          const angle = (360 / SIDES) * i;
           const { x, y } = polarToCartesian(angle, RADIUS);
           return (
             <line
@@ -103,7 +107,7 @@ export function RadarChart({ abilities }: { abilities: Abilities }) {
 
         {/* 라벨 */}
         {LABELS.map((label, i) => {
-          const angle = (360 / 6) * i;
+          const angle = (360 / SIDES) * i;
           const { x, y } = polarToCartesian(angle, RADIUS + 18);
           return (
             <text

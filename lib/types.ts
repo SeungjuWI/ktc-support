@@ -17,7 +17,6 @@ export interface CareerEntry {
 
 export interface Abilities {
   technical: number;
-  korean: number;
   english: number;
   collaboration: number;
   stability: number;
