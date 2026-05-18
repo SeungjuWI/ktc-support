@@ -89,6 +89,7 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "status.phone_interview_done": { ko: "폰인터뷰 완료", en: "Phone Done", vi: "PV xong" },
   "status.final_passed": { ko: "폰인터뷰 합격", en: "Phone Interview Passed", vi: "Đạt" },
   "status.rejected": { ko: "불합격", en: "Rejected", vi: "Không đạt" },
+  "status.screening_failed": { ko: "스크리닝 실패", en: "Screening Failed", vi: "Sàng lọc thất bại" },
 };
 
 interface AdminI18nContextType {

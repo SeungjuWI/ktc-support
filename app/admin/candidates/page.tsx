@@ -35,7 +35,7 @@ const TAB_KEYS = [
   { key: "phone_pending", labelKey: "candidates.tab.phonePending", statuses: ["phone_interview_pending"] },
   { key: "phone_done", labelKey: "candidates.tab.phoneDone", statuses: ["phone_interview_done"] },
   { key: "final_passed", labelKey: "candidates.tab.finalPassed", statuses: ["final_passed"] },
-  { key: "rejected", labelKey: "candidates.tab.rejected", statuses: ["rejected"] },
+  { key: "rejected", labelKey: "candidates.tab.rejected", statuses: ["rejected", "screening_failed"] },
 ] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,6 +45,7 @@ const STATUS_COLORS: Record<string, string> = {
   phone_interview_done: "#6B7684",
   final_passed: "#1D9E75",
   rejected: "#B0B8C1",
+  screening_failed: "#B0B8C1",
 };
 
 function StatusBadge({ status, score, t }: { status: string; score: number | null; t: (k: string) => string }) {
@@ -151,7 +152,7 @@ export default function CandidatesPage() {
     phone_pending: candidates.filter((c) => c.pipeline_status === "phone_interview_pending").length,
     phone_done: candidates.filter((c) => c.pipeline_status === "phone_interview_done").length,
     final_passed: candidates.filter((c) => c.pipeline_status === "final_passed").length,
-    rejected: candidates.filter((c) => c.pipeline_status === "rejected").length,
+    rejected: candidates.filter((c) => c.pipeline_status === "rejected" || c.pipeline_status === "screening_failed").length,
   };
 
   const STAT_KEYS: { key: keyof typeof counts; labelKey: string; color: string }[] = [

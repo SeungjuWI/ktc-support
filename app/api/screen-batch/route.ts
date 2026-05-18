@@ -131,6 +131,11 @@ export async function POST() {
             } else {
               errors++;
               const errMsg = result && "error" in result ? (result as { error: string }).error : "알 수 없는 오류";
+              await supabase.from("candidates").update({
+                pipeline_status: "screening_failed",
+                rejection_reason: errMsg,
+                updated_at: new Date().toISOString(),
+              }).eq("id", c.id);
               send({
                 type: "result",
                 current: i + 1,
@@ -142,8 +147,13 @@ export async function POST() {
                 progress: Math.round(((i + 1) / total) * 100),
               });
             }
-          } catch {
+          } catch (err) {
             errors++;
+            await supabase.from("candidates").update({
+              pipeline_status: "screening_failed",
+              rejection_reason: err instanceof Error ? err.message : "Unknown error",
+              updated_at: new Date().toISOString(),
+            }).eq("id", c.id);
             send({
               type: "result",
               current: i + 1,

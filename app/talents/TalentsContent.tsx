@@ -48,9 +48,6 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
     return result;
   }, [talents, roleFilter, sortOption]);
 
-  const availableCount = filteredTalents.filter(
-    (t) => t.availability === "immediate"
-  ).length;
 
   const router = useRouter();
   const [selected, setSelected] = useState<Talent | null>(null);
