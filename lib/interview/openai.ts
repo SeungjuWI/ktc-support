@@ -74,7 +74,7 @@ Important rules:
 Output format:
 {
   "score": <integer 1-10>,
-  "reasoning": "<2-4 sentence explanation in Korean, citing specific parts of the answer>"
+  "reasoning": "<2-4 sentence explanation in English, citing specific parts of the answer>"
 }`;
 
   const userPrompt = `Question: ${params.questionText}
