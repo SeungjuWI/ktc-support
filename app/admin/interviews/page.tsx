@@ -10,6 +10,7 @@ interface Session {
   candidate_name: string;
   candidate_email: string;
   applied_company: string | null;
+  candidate_id: string | null;
   status: string;
   total_score: number | null;
   human_decision: string | null;
@@ -112,7 +113,19 @@ export default function InterviewsAdminPage() {
                     ) : (s.candidate_name || <span className="text-gray-400">—</span>)}
                   </td>
                   <td className="px-4 py-3 text-[12px] text-gray-600">
-                    {s.applied_company || <span className="text-gray-400">—</span>}
+                    <div className="flex items-center gap-1.5">
+                      {s.candidate_id ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#E8F3FF] text-[#3182F6] text-[11px]">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          auto
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-1.5 py-0.5 rounded-full bg-[#F2F4F6] text-[#8B95A1] text-[11px]">
+                          manual
+                        </span>
+                      )}
+                      {s.applied_company && <span>{s.applied_company}</span>}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-[12px] px-2 py-1 rounded-full ${statusBadge(s.status)}`}>{statusLabel(s)}</span>
