@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
     .from("interview_sessions")
-    .select("status")
+    .select("status, candidate_name, candidate_email, applied_company")
     .eq("access_code", code)
     .maybeSingle();
 
@@ -30,5 +30,13 @@ export async function GET(req: NextRequest) {
       message: "This code has already been used.",
     });
   }
-  return NextResponse.json({ success: true, status: data.status });
+  return NextResponse.json({
+    success: true,
+    status: data.status,
+    prefill: {
+      name: data.candidate_name || "",
+      email: data.candidate_email || "",
+      appliedCompany: data.applied_company || "",
+    },
+  });
 }

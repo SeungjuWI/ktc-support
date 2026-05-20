@@ -29,13 +29,21 @@ export default function IntroPage({ params }: { params: { code: string } }) {
   // 확인 모달
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // 코드 유효성 체크
+  // 코드 유효성 체크 + 자동 입력
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`/api/interview/validate?code=${encodeURIComponent(params.code)}`);
         const json = await res.json();
-        if (!json.success) setExpired(true);
+        if (!json.success) {
+          setExpired(true);
+          return;
+        }
+        if (json.prefill) {
+          if (json.prefill.name) setName(json.prefill.name);
+          if (json.prefill.email) setEmail(json.prefill.email);
+          if (json.prefill.appliedCompany) setAppliedCompany(json.prefill.appliedCompany);
+        }
       } catch {
         // 네트워크 에러는 무시
       }
