@@ -36,7 +36,7 @@ function getDeadline(): string {
   const tomorrow = new Date(vn);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  return `${months[tomorrow.getMonth()]} ${tomorrow.getDate()}, ${tomorrow.getFullYear()}`;
+  return `${months[tomorrow.getMonth()]} ${tomorrow.getDate()}, ${tomorrow.getFullYear()} at 10:00`;
 }
 
 function buildEmailHtml(name: string, company: string, code: string, deadline: string): string {
@@ -82,7 +82,7 @@ function buildEmailHtml(name: string, company: string, code: string, deadline: s
       <div style="background: #F9FAFB; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
         <p style="font-size: 13px; color: #191F28; font-weight: 500; margin: 0 0 4px;">Deadline</p>
         <p style="font-size: 15px; color: #E8590C; font-weight: 500; margin: 0 0 8px;">
-          ${deadline}, 10:00 AM (Vietnam time, GMT+7)
+          ${deadline} (Vietnam time, GMT+7)
         </p>
         <p style="font-size: 13px; color: #8B95A1; margin: 0;">
           If not completed by the deadline, the application will be automatically closed.
@@ -144,13 +144,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { candidateIds } = body;
+  const { candidateIds, deadline: customDeadline } = body;
   if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
     return NextResponse.json({ error: "candidateIds required" }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
-  const deadline = getDeadline();
+  const deadline = customDeadline || getDeadline();
 
   // 후보자 정보 조회
   const { data: candidates } = await supabase

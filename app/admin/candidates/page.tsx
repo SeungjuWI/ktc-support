@@ -152,6 +152,7 @@ export default function CandidatesPage() {
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
@@ -209,18 +210,18 @@ export default function CandidatesPage() {
     setBusy(false); setProgress(0); setMessage("");
   };
 
-  const sendAllInterviews = async () => {
+  const sendAllInterviews = async (deadline: string) => {
     const targets = filtered.filter((c) => c.email);
     if (targets.length === 0) return;
-    if (!confirm(`${targets.length}명에게 AI 인터뷰 코드를 발송합니다. 진행할까요?`)) return;
 
     setSendingAll(true);
+    setShowSendModal(false);
     setResult(null);
     try {
       const res = await fetch("/api/admin/send-interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidateIds: targets.map((c) => c.id) }),
+        body: JSON.stringify({ candidateIds: targets.map((c) => c.id), deadline }),
       });
       const json = await res.json();
       const msg = `AI 인터뷰 발송 완료\n\n성공: ${json.sent}명\n실패: ${json.failed}명\n전체: ${json.total}명`;
@@ -384,12 +385,26 @@ export default function CandidatesPage() {
           <span className="text-[13px] text-blue-600">
             {filtered.filter((c) => c.email).length}명에게 AI 인터뷰 코드를 일괄 발송할 수 있습니다
           </span>
-          <button onClick={sendAllInterviews} disabled={sendingAll || busy}
+          <button onClick={() => setShowSendModal(true)} disabled={sendingAll || busy}
             className="px-4 py-2 bg-[#3182F6] text-white text-[13px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
             {sendingAll ? "발송 중..." : `전체 발송 (${filtered.filter((c) => c.email).length}명)`}
           </button>
         </div>
       )}
+
+      {showSendModal && (() => {
+        const targets = filtered.filter((c) => c.email);
+        const sample = targets[0];
+        return (
+          <SendInterviewModal
+            count={targets.length}
+            sampleName={sample?.full_name || ""}
+            sampleCompany={sample?.applied_company || sample?.applied_job || "the position"}
+            onConfirm={sendAllInterviews}
+            onClose={() => setShowSendModal(false)}
+          />
+        );
+      })()}
 
       <div className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
         {filtered.length === 0 ? (
@@ -751,6 +766,216 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
               </button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SendInterviewModal({ count, sampleName, sampleCompany, onConfirm, onClose }: {
+  count: number;
+  sampleName: string;
+  sampleCompany: string;
+  onConfirm: (deadline: string) => void;
+  onClose: () => void;
+}) {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultDate = tomorrow.toISOString().split("T")[0];
+  const [date, setDate] = useState(defaultDate);
+  const [hour, setHour] = useState("23");
+  const [minute, setMinute] = useState("59");
+  const [showPreview, setShowPreview] = useState(false);
+
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = ["00", "15", "30", "45", "59"];
+
+  const getDeadlineEn = () => {
+    if (!date) return "";
+    const [y, m, d] = date.split("-");
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${months[Number(m) - 1]} ${Number(d)}, ${y} at ${hour}:${minute}`;
+  };
+
+  const getDeadlineKo = () => {
+    if (!date) return "";
+    const [y, m, d] = date.split("-");
+    return `${y}년 ${Number(m)}월 ${Number(d)}일 ${hour}:${minute} (베트남 시간, GMT+7)`;
+  };
+
+  const handleConfirm = () => {
+    onConfirm(getDeadlineEn());
+  };
+
+  const sampleCode = "KTC-A2B3C4";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl w-full max-w-[560px] mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white z-10 px-6 py-5 border-b border-gray-100 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[16px] font-medium text-gray-900">AI 인터뷰 전체 발송</h3>
+              <p className="text-[13px] text-gray-500 mt-1">{count}명에게 발송합니다</p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-[12px] text-gray-500 mb-2 block">마감 날짜</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-gray-300"
+            />
+          </div>
+
+          <div>
+            <label className="text-[12px] text-gray-500 mb-2 block">마감 시간 (베트남 시간, GMT+7)</label>
+            <div className="flex gap-2 items-center">
+              <Dropdown
+                value={hour}
+                onChange={setHour}
+                placeholder="시"
+                options={hours.map((h) => ({ value: h, label: `${h}시` }))}
+              />
+              <span className="text-gray-400">:</span>
+              <Dropdown
+                value={minute}
+                onChange={setMinute}
+                placeholder="분"
+                options={minutes.map((m) => ({ value: m, label: `${m}분` }))}
+              />
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl px-3.5 py-3">
+            <p className="text-[11px] text-gray-500 mb-1">이메일에 표시될 마감</p>
+            <p className="text-[13px] text-gray-900">{getDeadlineKo()}</p>
+          </div>
+
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 hover:border-gray-300 transition-colors"
+          >
+            <span>이메일 미리보기 (첫 번째 후보자 기준)</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              className={`transition-transform ${showPreview ? "rotate-180" : ""}`}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {showPreview && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200 space-y-1">
+                <div className="flex gap-2 text-[12px]">
+                  <span className="text-gray-500 w-[40px]">To:</span>
+                  <span className="text-gray-900">(각 후보자 이메일)</span>
+                </div>
+                <div className="flex gap-2 text-[12px]">
+                  <span className="text-gray-500 w-[40px]">제목:</span>
+                  <span className="text-gray-900">[{sampleCompany}] Congratulations on passing the screening — AI Interview link</span>
+                </div>
+              </div>
+              <div className="bg-white p-4">
+                <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", maxWidth: 520, margin: "0 auto" }}>
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 6, background: "#E8F3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#3182F6", fontSize: 14, fontWeight: 500 }}>V</span>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: 14, color: "#191F28", lineHeight: 1.8, margin: "0 0 16px" }}>
+                    Dear <strong>{sampleName}</strong>,
+                  </p>
+
+                  <p style={{ fontSize: 14, color: "#191F28", lineHeight: 1.8, margin: "0 0 8px" }}>
+                    This is <strong>VTM</strong>, the recruitment agency for <strong>{sampleCompany}</strong>. Congratulations on passing the document screening!
+                  </p>
+
+                  <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 8px" }}>
+                    The next step is an <strong>AI voice interview</strong>.
+                  </p>
+
+                  <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 8px" }}>
+                    This interview method was introduced to evaluate your skills more fairly. You can complete it at any time that suits you — it only takes about <strong>15 minutes</strong>, regardless of the interviewer&apos;s schedule.
+                  </p>
+
+                  <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 20px" }}>
+                    No additional software is required — simply click the link below to get started. If you pass this round, we will contact you separately to arrange a final interview with the company.
+                  </p>
+
+                  <div style={{ textAlign: "center" as const, marginBottom: 14 }}>
+                    <span style={{ display: "inline-block", background: "#3182F6", color: "white", padding: "12px 32px", borderRadius: 10, fontSize: 14, fontWeight: 500 }}>
+                      Start Interview
+                    </span>
+                  </div>
+
+                  <div style={{ background: "#F9FAFB", borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "center" as const }}>
+                    <p style={{ fontSize: 12, color: "#8B95A1", margin: "0 0 6px" }}>Access Code</p>
+                    <p style={{ fontSize: 22, fontWeight: 600, color: "#191F28", margin: 0, letterSpacing: 2, fontFamily: "monospace" }}>{sampleCode}</p>
+                  </div>
+
+                  <div style={{ background: "#F9FAFB", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, color: "#191F28", fontWeight: 500, margin: "0 0 4px" }}>Deadline</p>
+                    <p style={{ fontSize: 14, color: "#E8590C", fontWeight: 500, margin: "0 0 6px" }}>
+                      {getDeadlineEn()} (Vietnam time, GMT+7)
+                    </p>
+                    <p style={{ fontSize: 12, color: "#8B95A1", margin: 0 }}>
+                      If not completed by the deadline, the application will be automatically closed.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#FFF8F0", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, color: "#E8590C", fontWeight: 500, margin: "0 0 6px" }}>Before you begin, please note:</p>
+                    <ul style={{ fontSize: 12, color: "#6B7684", lineHeight: 1.8, margin: 0, paddingLeft: 18 }}>
+                      <li>You may only attempt the interview <strong>once</strong> — retakes are not available</li>
+                      <li>Please use a <strong>stable Wi-Fi or internet connection</strong></li>
+                      <li>Closing or refreshing the browser during the interview will <strong>end your session</strong></li>
+                      <li>Please <strong>read all on-screen instructions</strong> carefully before starting</li>
+                    </ul>
+                  </div>
+
+                  <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 8px" }}>
+                    If you have any questions, please reply to this email.
+                  </p>
+                  <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 24px" }}>
+                    Best of luck!
+                  </p>
+                  <p style={{ fontSize: 14, color: "#191F28", lineHeight: 1.8, margin: "0 0 24px" }}>
+                    <strong>Sean</strong><br/>VTM Recruitment Team
+                  </p>
+
+                  <div style={{ borderTop: "1px solid #E5E8EB", paddingTop: 16 }}>
+                    <p style={{ fontSize: 11, color: "#B0B8C1", lineHeight: 1.6, margin: 0 }}>
+                      VTM Recruitment · Likelion<br/>
+                      Contact: wsj@likelion.net
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-100 flex gap-2 rounded-b-2xl">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 text-[13px] rounded-xl hover:border-gray-300 transition-colors">
+            취소
+          </button>
+          <button onClick={handleConfirm}
+            className="flex-1 py-2.5 bg-[#3182F6] text-white text-[13px] rounded-xl hover:bg-[#2272EB] transition-colors">
+            발송하기 ({count}명)
+          </button>
         </div>
       </div>
     </div>
