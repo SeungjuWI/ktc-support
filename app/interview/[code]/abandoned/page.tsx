@@ -3,14 +3,19 @@
 import { useEffect } from "react";
 
 export default function AbandonedPage() {
-  // 뒤로가기 차단 → 이 페이지에 고정
   useEffect(() => {
-    const block = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
+    const block = () => window.history.pushState(null, "", window.location.href);
     block();
     window.addEventListener("popstate", block);
-    return () => window.removeEventListener("popstate", block);
+
+    const timer = setTimeout(() => {
+      window.location.href = "/interview";
+    }, 3000);
+
+    return () => {
+      window.removeEventListener("popstate", block);
+      clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -33,6 +38,7 @@ export default function AbandonedPage() {
         <p className="text-gray-400 text-[12px] italic">
           Buoi phong van da ket thuc. Ma truy cap khong the su dung lai. Neu co thac mac, vui long lien he nguoi tuyen dung.
         </p>
+        <p className="text-gray-400 text-[11px] mt-6">Redirecting in 3 seconds...</p>
       </div>
     </div>
   );

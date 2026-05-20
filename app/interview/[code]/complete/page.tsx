@@ -3,14 +3,19 @@
 import { useEffect } from "react";
 
 export default function CompletePage() {
-  // 뒤로가기 차단
   useEffect(() => {
-    const block = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
+    const block = () => window.history.pushState(null, "", window.location.href);
     block();
     window.addEventListener("popstate", block);
-    return () => window.removeEventListener("popstate", block);
+
+    const timer = setTimeout(() => {
+      window.location.href = "/interview";
+    }, 3000);
+
+    return () => {
+      window.removeEventListener("popstate", block);
+      clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -25,6 +30,7 @@ export default function CompletePage() {
         <p className="text-gray-400 text-[12px] italic">
           Cam on ban. Doi KTC se lien he voi ban qua email trong vong 5 ngay lam viec.
         </p>
+        <p className="text-gray-400 text-[11px] mt-6">Redirecting in 3 seconds...</p>
       </div>
     </div>
   );
