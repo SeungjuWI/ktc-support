@@ -33,7 +33,7 @@ export async function POST() {
   let deleted = 0;
   const deleteIds: string[] = [];
 
-  for (const [, group] of groups) {
+  for (const [, group] of Array.from(groups)) {
     if (group.length <= 1) continue;
 
     // 진행된 상태(new가 아닌)가 있으면 그걸 keep, 아니면 가장 먼저 생성된 것 keep
@@ -61,7 +61,7 @@ export async function POST() {
 
   return NextResponse.json({
     total: candidates.length,
-    duplicateGroups: [...groups.values()].filter((g) => g.length > 1).length,
+    duplicateGroups: Array.from(groups.values()).filter((g) => g.length > 1).length,
     deleted,
   });
 }

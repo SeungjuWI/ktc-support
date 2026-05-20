@@ -1,11 +1,67 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { updateTalentVerification } from "@/lib/create-talent-card";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { JD_MAP } from "@/lib/jd-data";
 import { getUserProfile } from "@/lib/supabase-auth";
+
+function Dropdown({ value, onChange, options, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] transition-colors whitespace-nowrap ${
+          value !== "all"
+            ? "bg-gray-900 text-white"
+            : "bg-white border border-gray-200 text-gray-700 hover:border-gray-300"
+        }`}
+      >
+        {selected?.label || placeholder}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className={`transition-transform ${open ? "rotate-180" : ""}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 min-w-[180px] max-h-[280px] overflow-y-auto bg-white border border-gray-200/80 rounded-xl py-1 z-50"
+          style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full text-left px-3.5 py-2 text-[13px] transition-colors ${
+                opt.value === value
+                  ? "text-[#3182F6] bg-[#E8F3FF]/50"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Candidate {
   id: string;
@@ -290,37 +346,37 @@ export default function CandidatesPage() {
         ))}
       </div>
 
-      <div className="flex gap-2 mb-4">
-        <select
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <Dropdown
           value={positionFilter}
-          onChange={(e) => setPositionFilter(e.target.value)}
-          className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:border-gray-300 cursor-pointer"
-        >
-          <option value="all">{t("candidates.allPositions")}</option>
-          {positions.map((pos) => (
-            <option key={pos} value={pos}>{pos}</option>
-          ))}
-        </select>
-        <select
+          onChange={setPositionFilter}
+          placeholder={t("candidates.allPositions")}
+          options={[
+            { value: "all", label: t("candidates.allPositions") },
+            ...positions.map((pos) => ({ value: pos, label: pos })),
+          ]}
+        />
+        <Dropdown
           value={jobFilter}
-          onChange={(e) => setJobFilter(e.target.value)}
-          className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:border-gray-300 cursor-pointer"
-        >
-          <option value="all">{t("candidates.allJobs")}</option>
-          {jobCodes.map((code) => (
-            <option key={code} value={code}>{code}</option>
-          ))}
-        </select>
-        <select
+          onChange={setJobFilter}
+          placeholder={t("candidates.allJobs")}
+          options={[
+            { value: "all", label: t("candidates.allJobs") },
+            ...jobCodes.map((code) => {
+              const jd = JD_MAP[code];
+              return { value: code, label: jd ? `${code} · ${jd.company}` : code };
+            }),
+          ]}
+        />
+        <Dropdown
           value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-          className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:border-gray-300 cursor-pointer"
-        >
-          <option value="all">{t("candidates.allSources")}</option>
-          {sources.map((src) => (
-            <option key={src} value={src}>{src}</option>
-          ))}
-        </select>
+          onChange={setSourceFilter}
+          placeholder={t("candidates.allSources")}
+          options={[
+            { value: "all", label: t("candidates.allSources") },
+            ...sources.map((src) => ({ value: src, label: src })),
+          ]}
+        />
       </div>
 
       {isSuperAdmin && activeTab === "ai_passed" && filtered.length > 0 && (
@@ -512,17 +568,7 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
 
           <div>
             <p className="text-[11px] text-gray-500 mb-3">JD 배정</p>
-            <select
-              value={currentJobCode}
-              onChange={(e) => assignJD(e.target.value)}
-              disabled={assigningJD}
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-gray-300 disabled:opacity-50"
-            >
-              <option value="">미배정</option>
-              {Object.entries(JD_MAP).map(([code, jd]) => (
-                <option key={code} value={code}>{code} — {jd.company} · {jd.position}</option>
-              ))}
-            </select>
+            <JDDropdown value={currentJobCode} onChange={assignJD} disabled={assigningJD} />
           </div>
 
           {summary && (
@@ -707,6 +753,63 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function JDDropdown({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const jd = value ? JD_MAP[value] : null;
+  const label = jd ? `${value} — ${jd.company} · ${jd.position}` : "미배정";
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => !disabled && setOpen(!open)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 transition-colors disabled:opacity-50 ${
+          !disabled ? "hover:border-gray-300" : ""
+        }`}
+      >
+        <span className="truncate">{label}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className={`flex-shrink-0 ml-2 transition-transform ${open ? "rotate-180" : ""}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 max-h-[240px] overflow-y-auto bg-white border border-gray-200/80 rounded-xl py-1 z-50"
+          style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+          <button
+            onClick={() => { onChange(""); setOpen(false); }}
+            className={`w-full text-left px-3.5 py-2 text-[13px] transition-colors ${
+              !value ? "text-[#3182F6] bg-[#E8F3FF]/50" : "text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            미배정
+          </button>
+          {Object.entries(JD_MAP).map(([code, j]) => (
+            <button
+              key={code}
+              onClick={() => { onChange(code); setOpen(false); }}
+              className={`w-full text-left px-3.5 py-2 text-[13px] transition-colors ${
+                code === value ? "text-[#3182F6] bg-[#E8F3FF]/50" : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {code} — {j.company} · {j.position}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
