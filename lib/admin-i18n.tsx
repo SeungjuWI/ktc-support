@@ -21,6 +21,10 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "nav.inquiries": { ko: "인재 문의", en: "Inquiries", vi: "Yêu cầu tuyển dụng" },
   "nav.pool": { ko: "인재풀 등록", en: "Talent Pool", vi: "Đăng ký nhân tài" },
   "nav.roles": { ko: "권한 안내", en: "Permissions", vi: "Phân quyền" },
+  "nav.interviews": { ko: "AI 인터뷰", en: "AI Interviews", vi: "Phỏng vấn AI" },
+
+  // AI 인터뷰
+  "interviews.issueCodes": { ko: "코드 발급", en: "Issue Codes", vi: "Phát mã" },
 
   // 후보자 관리
   "candidates.title": { ko: "후보자 관리", en: "Candidate Management", vi: "Quản lý ứng viên" },

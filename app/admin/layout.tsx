@@ -12,6 +12,7 @@ const NAV_KEYS = [
   { href: "/admin/candidates", labelKey: "nav.candidates", icon: "candidates" },
   { href: "/admin/pool", labelKey: "nav.pool", icon: "pool" },
   { href: "/admin/talents", labelKey: "nav.talents", icon: "talents" },
+  { href: "/admin/interviews", labelKey: "nav.interviews", icon: "interviews" },
   { href: "/admin/inquiries", labelKey: "nav.inquiries", icon: "inquiries" },
   { href: "/admin/roles", labelKey: "nav.roles", icon: "roles" },
 ];
@@ -49,6 +50,16 @@ function NavIcon({ type }: { type: string }) {
         <circle cx="9" cy="7" r="4" />
         <line x1="19" y1="8" x2="19" y2="14" />
         <line x1="22" y1="11" x2="16" y2="11" />
+      </svg>
+    );
+  }
+  if (type === "interviews") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+        <path d="M19 10v2a7 7 0 01-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
       </svg>
     );
   }
