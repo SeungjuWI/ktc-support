@@ -91,11 +91,15 @@ export default function QuestionPage({ params }: { params: { code: string } }) {
   };
 
   const finalize = async () => {
-    await fetch("/api/interview/finalize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: params.code }),
-    });
+    try {
+      await fetch("/api/interview/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: params.code }),
+      });
+    } catch (err) {
+      console.error("Finalize error:", err);
+    }
     window.location.href = `/interview/${params.code}/complete`;
   };
 
