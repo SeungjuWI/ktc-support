@@ -59,6 +59,7 @@ export default function Recorder({
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const mimeTypeRef = useRef<string>(getSupportedMimeType());
   const startedRef = useRef(false);
 
@@ -77,6 +78,12 @@ export default function Recorder({
     } catch {
       console.error("Failed to get mic stream for recording");
       return;
+    }
+
+    // 녹음 시작 시 아바타 영상 첫 프레임으로 정지
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
     }
 
     playBeep();
@@ -156,11 +163,26 @@ export default function Recorder({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const avatarVideo = (
+    <video
+      ref={videoRef}
+      src="/interview-avatar.mp4"
+      muted
+      playsInline
+      loop={phase === "playing-tts"}
+      autoPlay={phase === "playing-tts"}
+      className="w-[120px] h-[150px] object-cover rounded-xl mx-auto mb-4"
+    />
+  );
+
   if (phase === "playing-tts") {
     return (
-      <div className="flex items-center justify-center gap-3 py-4">
-        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-        <span className="text-gray-700 text-[15px]">Listening... / Dang nghe...</span>
+      <div className="flex flex-col items-center py-4">
+        {avatarVideo}
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+          <span className="text-gray-700 text-[15px]">Listening... / Dang nghe...</span>
+        </div>
       </div>
     );
   }
@@ -170,6 +192,7 @@ export default function Recorder({
     const pct = (recordedSec / maxDurationSeconds) * 100;
     return (
       <div>
+        {avatarVideo}
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
           <div className="bg-red-400 h-1.5 rounded-full transition-all duration-1000"
             style={{ width: `${pct}%` }}></div>
