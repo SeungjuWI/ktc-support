@@ -20,14 +20,10 @@ export async function POST() {
         send({ type: "status", message: "시트 데이터 불러오는 중..." });
         const allCandidates = await fetchAllCandidates();
 
-        // 우선 대상 회사만 필터 (빈 배열이면 전체)
-        const PRIORITY_JOBS = /FPT401|AW801|LM1001|SHU1101|SHU1102/i;
-        const candidates = PRIORITY_JOBS.source !== "(?:)"
-          ? allCandidates.filter((c) => PRIORITY_JOBS.test(c.applied_job || ""))
-          : allCandidates;
+        const candidates = allCandidates;
 
         const total = candidates.length;
-        send({ type: "status", message: `전체 ${allCandidates.length}명 중 대상 ${total}명. DB 저장 시작...`, total });
+        send({ type: "status", message: `전체 ${total}명. DB 저장 시작...`, total });
 
         const supabase = getSupabaseAdmin();
         let inserted = 0;
