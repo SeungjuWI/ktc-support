@@ -99,6 +99,20 @@ export async function POST() {
             current: (ch.period || "").toLowerCase().includes("present"),
           }));
 
+          // 중복 체크: 같은 이름의 talent가 이미 있으면 기존 것에 연결
+          const { data: existingTalent } = await supabase
+            .from("talents")
+            .select("id")
+            .eq("name", c.full_name)
+            .maybeSingle();
+
+          if (existingTalent) {
+            await supabase.from("candidates").update({ talent_id: existingTalent.id }).eq("id", c.id);
+            created++;
+            send({ type: "created", current: i + 1, total: passed.length, name: c.full_name, score, role, progress: Math.round(((i + 1) / passed.length) * 100), note: "linked to existing" });
+            continue;
+          }
+
           const { data: talent, error } = await supabase
             .from("talents")
             .insert({

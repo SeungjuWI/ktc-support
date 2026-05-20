@@ -46,6 +46,21 @@ export async function createTalentCard(
     current: (ch.period || "").toLowerCase().includes("present"),
   }));
 
+  // 중복 체크: 같은 이름의 talent가 이미 있으면 기존 것에 연결
+  const { data: existingTalent } = await supabase
+    .from("talents")
+    .select("id")
+    .eq("name", candidate.full_name)
+    .maybeSingle();
+
+  if (existingTalent) {
+    await supabase
+      .from("candidates")
+      .update({ talent_id: existingTalent.id })
+      .eq("id", candidate.id);
+    return existingTalent;
+  }
+
   const { data: talent } = await supabase
     .from("talents")
     .insert({

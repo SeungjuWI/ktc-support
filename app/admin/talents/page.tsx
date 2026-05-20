@@ -31,6 +31,8 @@ export default function AdminTalentsPage() {
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [dedupLoading, setDedupLoading] = useState(false);
+  const [dedupResult, setDedupResult] = useState<{ removed: number; duplicateGroups: number } | null>(null);
 
   useEffect(() => {
     loadTalents();
@@ -63,6 +65,18 @@ export default function AdminTalentsPage() {
   async function unpublishAll() {
     await supabase.from("talents").update({ published: false, updated_at: new Date().toISOString() }).eq("published", true);
     setTalents((prev) => prev.map((t) => ({ ...t, published: false })));
+  }
+
+  async function dedupTalents() {
+    setDedupLoading(true);
+    setDedupResult(null);
+    try {
+      const res = await fetch("/api/admin/dedup-talents", { method: "POST" });
+      const json = await res.json();
+      setDedupResult({ removed: json.removed, duplicateGroups: json.duplicateGroups });
+      if (json.removed > 0) loadTalents();
+    } catch { /* ignore */ }
+    setDedupLoading(false);
   }
 
   async function deleteTalent(id: string) {
@@ -102,12 +116,29 @@ export default function AdminTalentsPage() {
             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] hover:border-gray-300 transition-colors">
             {t("talents.unpublishAll")}
           </button>
+          <button onClick={dedupTalents} disabled={dedupLoading}
+            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] hover:border-gray-300 transition-colors disabled:opacity-50">
+            {dedupLoading ? "정리 중..." : "중복 정리"}
+          </button>
           <Link href="/admin/talents/new"
             className="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] hover:bg-gray-800 transition-colors">
             {t("talents.addTalent")}
           </Link>
         </div>
       </div>
+
+      {dedupResult && (
+        <div className={`mb-4 px-4 py-3 rounded-xl text-[13px] ${
+          dedupResult.removed > 0
+            ? "bg-[#E8F3FF] text-[#3182F6]"
+            : "bg-[#F2F4F6] text-[#6B7684]"
+        }`}>
+          {dedupResult.removed > 0
+            ? `${dedupResult.duplicateGroups}개 그룹에서 중복 ${dedupResult.removed}개 제거 완료`
+            : "중복 카드가 없습니다"}
+          <button onClick={() => setDedupResult(null)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       <div className="mb-4">
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
