@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { updateTalentVerification } from "@/lib/create-talent-card";
 import { useAdminI18n } from "@/lib/admin-i18n";
@@ -88,15 +88,20 @@ interface Candidate {
   created_at: string;
 }
 
-const TAB_KEYS = [
-  { key: "pending", labelKey: "candidates.tab.pending", statuses: ["new"] },
-  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed"] },
-  { key: "ai_interview_sent", labelKey: "candidates.tab.aiInterviewSent", statuses: ["ai_interview_sent"] },
-  { key: "ai_interview_done", labelKey: "candidates.tab.aiInterviewDone", statuses: ["ai_interview_done"] },
-  { key: "final_passed", labelKey: "candidates.tab.finalPassed", statuses: ["final_passed"] },
-  { key: "screening_failed", labelKey: "candidates.tab.screeningFailed", statuses: ["screening_failed"] },
-  { key: "rejected", labelKey: "candidates.tab.rejected", statuses: ["rejected"] },
+const PIPELINE_STEPS = [
+  { key: "pending", labelKey: "candidates.tab.pending", statuses: ["new"], color: "#8B95A1" },
+  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed"], color: "#3182F6" },
+  { key: "ai_interview_sent", labelKey: "candidates.tab.aiInterviewSent", statuses: ["ai_interview_sent"], color: "#E8590C" },
+  { key: "ai_interview_done", labelKey: "candidates.tab.aiInterviewDone", statuses: ["ai_interview_done"], color: "#6B7684" },
+  { key: "final_passed", labelKey: "candidates.tab.finalPassed", statuses: ["final_passed"], color: "#1D9E75" },
 ] as const;
+
+const EXIT_STEPS = [
+  { key: "screening_failed", labelKey: "candidates.tab.screeningFailed", statuses: ["screening_failed"], color: "#B0B8C1" },
+  { key: "rejected", labelKey: "candidates.tab.rejected", statuses: ["rejected"], color: "#B0B8C1" },
+] as const;
+
+const ALL_STEPS = [...PIPELINE_STEPS, ...EXIT_STEPS];
 
 const STATUS_COLORS: Record<string, string> = {
   new: "#8B95A1",
@@ -235,7 +240,7 @@ export default function CandidatesPage() {
     setSendingAll(false);
   };
 
-  const tabGroup = TAB_KEYS.find((tab) => tab.key === activeTab)!;
+  const tabGroup = ALL_STEPS.find((tab) => tab.key === activeTab)!;
   const sources = Array.from(new Set(candidates.map((c) => c.source)));
   const positions = Array.from(new Set(candidates.map((c) => c.position).filter(Boolean))) as string[];
   const jobCodes = Array.from(new Set(candidates.map((c) => c.applied_job?.match(/^([A-Z]+\d+)/)?.[1]).filter(Boolean))) as string[];
@@ -256,15 +261,6 @@ export default function CandidatesPage() {
     rejected: candidates.filter((c) => c.pipeline_status === "rejected").length,
   };
 
-  const STAT_KEYS: { key: keyof typeof counts; labelKey: string; color: string }[] = [
-    { key: "pending", labelKey: "candidates.stat.pending", color: "#191F28" },
-    { key: "ai_passed", labelKey: "candidates.stat.aiPassed", color: "#3182F6" },
-    { key: "ai_interview_sent", labelKey: "candidates.stat.aiInterviewSent", color: "#E8590C" },
-    { key: "ai_interview_done", labelKey: "candidates.stat.aiInterviewDone", color: "#6B7684" },
-    { key: "final_passed", labelKey: "candidates.stat.finalPassed", color: "#1D9E75" },
-    { key: "screening_failed", labelKey: "candidates.stat.screeningFailed", color: "#B0B8C1" },
-    { key: "rejected", labelKey: "candidates.stat.rejected", color: "#B0B8C1" },
-  ];
 
   if (loading) return <div className="flex items-center justify-center py-20"><p className="text-[14px] text-gray-500">{t("common.loading")}</p></div>;
 
@@ -317,13 +313,84 @@ export default function CandidatesPage() {
 
       {result && !busy && <div className="mb-4 px-4 py-3 bg-blue-50 text-[13px] text-blue-600 rounded-xl">{result}</div>}
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
-        {STAT_KEYS.map((s) => (
-          <div key={s.key} className="bg-white rounded-2xl border border-gray-200/60 p-4">
-            <p className="text-[11px] text-gray-500 mb-1">{t(s.labelKey)}</p>
-            <p className="text-[22px] font-medium" style={{ color: s.color }}>{counts[s.key]}</p>
-          </div>
-        ))}
+      {/* 파이프라인 로드맵 */}
+      <div className="bg-white rounded-2xl border border-gray-200/60 p-5 mb-5">
+        <div className="flex items-center">
+          {PIPELINE_STEPS.map((step, i) => {
+            const isActive = activeTab === step.key;
+            const count = counts[step.key as keyof typeof counts];
+            const isPast = PIPELINE_STEPS.findIndex((s) => s.key === activeTab) > i;
+            return (
+              <React.Fragment key={step.key}>
+                <button
+                  onClick={() => setActiveTab(step.key)}
+                  className={`flex flex-col items-center gap-1.5 px-2 py-2 rounded-xl transition-colors flex-1 min-w-0 ${
+                    isActive ? "bg-gray-50" : "hover:bg-gray-50/50"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-medium transition-colors ${
+                      isActive
+                        ? "text-white"
+                        : isPast
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                    style={isActive ? { backgroundColor: step.color } : undefined}
+                  >
+                    {isPast ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      count
+                    )}
+                  </div>
+                  <span className={`text-[11px] leading-tight text-center truncate w-full ${
+                    isActive ? "text-gray-900 font-medium" : "text-gray-500"
+                  }`}>
+                    {t(step.labelKey)}
+                  </span>
+                  {isActive && (
+                    <span className="text-[18px] font-medium" style={{ color: step.color }}>
+                      {count}명
+                    </span>
+                  )}
+                </button>
+                {i < PIPELINE_STEPS.length - 1 && (
+                  <div className={`flex-shrink-0 ${isPast ? "text-gray-300" : "text-gray-200"}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* 탈락 섹션 */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+          <span className="text-[11px] text-gray-400 flex-shrink-0">탈락</span>
+          {EXIT_STEPS.map((step) => {
+            const isActive = activeTab === step.key;
+            const count = counts[step.key as keyof typeof counts];
+            return (
+              <button
+                key={step.key}
+                onClick={() => setActiveTab(step.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] transition-colors ${
+                  isActive
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                {t(step.labelKey)}
+                <span className={`${isActive ? "text-gray-300" : "text-gray-400"}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mb-4">
@@ -334,17 +401,6 @@ export default function CandidatesPage() {
           placeholder={lang === "ko" ? "이름으로 검색..." : lang === "vi" ? "Tìm theo tên..." : "Search by name..."}
           className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
         />
-      </div>
-
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {TAB_KEYS.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`px-3.5 py-[7px] rounded-full text-[13px] transition-colors ${
-              activeTab === tab.key ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-700 hover:border-gray-300"
-            }`}>
-            {t(tab.labelKey)} ({counts[tab.key as keyof typeof counts]})
-          </button>
-        ))}
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -462,6 +518,16 @@ export default function CandidatesPage() {
   );
 }
 
+const STAGE_OPTIONS = [
+  { value: "new", label: "스크리닝 대기" },
+  { value: "passed", label: "스크리닝 합격" },
+  { value: "ai_interview_sent", label: "AI 인터뷰 발송" },
+  { value: "ai_interview_done", label: "AI 인터뷰 완료" },
+  { value: "final_passed", label: "최종 합격" },
+  { value: "screening_failed", label: "스크리닝 실패" },
+  { value: "rejected", label: "불합격" },
+];
+
 function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate: Candidate; onClose: () => void }) {
   const { t, lang } = useAdminI18n();
   const [c, setC] = useState(initCandidate);
@@ -471,6 +537,7 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
   const [interviewSession, setInterviewSession] = useState<{ id: string; access_code: string; status: string; total_score: number | null } | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
   const [assigningJD, setAssigningJD] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const summary = c.llm_summary ? JSON.parse(c.llm_summary) : null;
   const currentJobCode = c.applied_job?.match(/^([A-Z]+\d+)/)?.[1] || "";
 
@@ -501,6 +568,26 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
     }).eq("id", c.id);
     setC((prev) => ({ ...prev, applied_job: newAppliedJob || null } as Candidate));
     setAssigningJD(false);
+  };
+
+  const deleteCandidate = async () => {
+    if (!confirm(`${c.full_name}을(를) 삭제하시겠습니까? 연결된 인재 카드와 인터뷰 세션도 함께 삭제됩니다.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/candidates/${c.id}`, { method: "DELETE" });
+      if (res.ok) {
+        onClose();
+      } else {
+        alert("삭제 실패");
+      }
+    } catch {
+      alert("삭제 실패");
+    }
+    setDeleting(false);
+  };
+
+  const changeStage = async (newStatus: string) => {
+    await updateStatus(newStatus);
   };
 
   // AI 인터뷰 세션 조회
@@ -731,8 +818,8 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
             </>
           )}
 
+          {/* 주요 액션 */}
           <div className="space-y-3 pt-2">
-            {/* 스크리닝 합격 → AI 인터뷰 발송 */}
             {c.pipeline_status === "passed" && (
               <div className="space-y-2">
                 <button onClick={sendAiInterview}
@@ -744,7 +831,6 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
               </div>
             )}
 
-            {/* AI 인터뷰 완료 → 최종 합격/불합격 */}
             {c.pipeline_status === "ai_interview_done" && (
               <div className="flex gap-2">
                 <button onClick={() => updateStatus("final_passed")} disabled={saving}
@@ -757,14 +843,37 @@ function CandidateDetailModal({ candidate: initCandidate, onClose }: { candidate
                 </button>
               </div>
             )}
+          </div>
 
-            {/* 불합격 처리 (합격/발송 상태에서) */}
-            {["passed", "ai_interview_sent"].includes(c.pipeline_status) && (
-              <button onClick={() => updateStatus("rejected", { rejection_reason: "Manually rejected" })} disabled={saving}
-                className="w-full py-2.5 text-[13px] text-gray-500 hover:text-gray-700 transition-colors">
-                {t("aiInterview.rejectAction")}
-              </button>
-            )}
+          {/* 단계 변경 + 삭제 */}
+          <div className="pt-4 mt-2 border-t border-gray-100 space-y-3">
+            <div>
+              <p className="text-[11px] text-gray-500 mb-2">단계 수동 변경</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STAGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => changeStage(opt.value)}
+                    disabled={saving || c.pipeline_status === opt.value}
+                    className={`px-2.5 py-1.5 rounded-lg text-[12px] transition-colors disabled:opacity-40 ${
+                      c.pipeline_status === opt.value
+                        ? "bg-gray-900 text-white"
+                        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={deleteCandidate}
+              disabled={deleting}
+              className="w-full py-2.5 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {deleting ? "삭제 중..." : "후보자 삭제"}
+            </button>
           </div>
         </div>
       </div>
