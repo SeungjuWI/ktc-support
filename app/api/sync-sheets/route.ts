@@ -52,13 +52,13 @@ export async function POST() {
         // 중복 체크용 맵 구축: sheet_row_identifier + 이메일 + 이름+전화번호
         // identifier가 바뀌어도 이메일이나 이름+전화번호로 잡아냄
         const existingMap = new Map<string, string>(); // key → pipeline_status (non-"new" 우선)
-        function setMap(key: string, status: string) {
+        const setMap = (key: string, status: string) => {
           if (!key) return;
           const current = existingMap.get(key);
           if (!current || current === "new") {
             existingMap.set(key, status);
           }
-        }
+        };
         existingAll.forEach((e) => {
           // 1차: sheet_row_identifier
           setMap(e.sheet_row_identifier, e.pipeline_status);
