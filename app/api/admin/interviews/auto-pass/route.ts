@@ -49,7 +49,7 @@ export async function POST() {
 
   // candidates 조회: id + llm_score + talent_id
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let allCandidates: any[] = [];
+  const allCandidates: any[] = [];
   if (candidateIds.length > 0) {
     const { data } = await supabase
       .from("candidates")

@@ -89,5 +89,8 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ success: true, items });
+  // 매칭점수(스크리닝 점수) 없는 항목 제외
+  const validItems = items.filter((i) => i.screening_score !== null);
+
+  return NextResponse.json({ success: true, items: validItems });
 }

@@ -78,17 +78,17 @@ export default function DeliveryPage() {
 
   const exportCsv = () => {
     const headers = [
-      "기업명", "이름", "영어 이름\n(공란 가능)", "경력\n(1)", "지원 포지션",
-      "매칭점수", "총평\n(3줄)", "인터뷰 결과\n(3줄)", "이력서_파일ID\n(구드 링크)", "지원자 번호",
+      "기업명", "이름", "영어 이름(공란 가능)", "경력", "지원 포지션",
+      "매칭점수", "총평(3줄)", "인터뷰 결과", "이력서_파일ID(구드 링크)", "지원자 번호",
     ];
     const rows = withSeqNo.map((item) => [
       item.applied_company,
       item.candidate_name,
-      item.candidate_name, // 영어 이름 = 베트남 이름 그대로
+      item.candidate_name,
       item.yoe || "",
       item.applied_position,
       item.screening_score !== null ? String(item.screening_score) : "",
-      item.strengths_ko.slice(0, 3).join("\n"),
+      item.strengths_ko.slice(0, 3).join(" / "),
       extractFirstSentence(item.ai_summary),
       item.cv_url,
       String(item.seqNo),
