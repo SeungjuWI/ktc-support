@@ -53,7 +53,7 @@ export default function MessagesPage() {
 
   const loadThreads = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/messages");
+      const res = await fetch("/api/admin/messages", { cache: "no-store" });
       const data = await res.json();
       setThreads(data.threads || []);
     } catch {
@@ -65,26 +65,37 @@ export default function MessagesPage() {
 
   useEffect(() => {
     loadThreads();
+    const interval = setInterval(loadThreads, 15000);
+    return () => clearInterval(interval);
   }, [loadThreads]);
 
   async function loadThread(threadId: string) {
     setSelectedThread(threadId);
     setLoadingMessages(true);
     setReplyBody("");
+    await refreshMessages(threadId);
+    setLoadingMessages(false);
+  }
+
+  async function refreshMessages(threadId: string) {
     try {
-      const res = await fetch(`/api/admin/messages/${threadId}`);
+      const res = await fetch(`/api/admin/messages/${threadId}`, { cache: "no-store" });
       const data = await res.json();
       setMessages(data.messages || []);
-      // 읽음 처리 반영
       setThreads((prev) =>
         prev.map((t) => (t.thread_id === threadId ? { ...t, unread_count: 0 } : t))
       );
     } catch {
       console.error("Failed to load thread");
-    } finally {
-      setLoadingMessages(false);
     }
   }
+
+  // 열려있는 스레드 자동 새로고침 (10초)
+  useEffect(() => {
+    if (!selectedThread) return;
+    const interval = setInterval(() => refreshMessages(selectedThread), 10000);
+    return () => clearInterval(interval);
+  }, [selectedThread]);
 
   async function handleSend() {
     if (!composeTo || !composeSubject || !composeBody) return;
