@@ -51,6 +51,20 @@ function buildOutboundHtml(body: string, threadId: string): string {
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
+  // 삭제된 스레드 ID 조회
+  const { data: deletedMeta } = await supabase
+    .from("email_thread_meta")
+    .select("thread_id")
+    .not("deleted_at", "is", null);
+  const deletedIds = new Set((deletedMeta || []).map((m) => m.thread_id));
+
+  // 별표 정보 조회
+  const { data: starredMeta } = await supabase
+    .from("email_thread_meta")
+    .select("thread_id")
+    .eq("starred", true);
+  const starredIds = new Set((starredMeta || []).map((m) => m.thread_id));
+
   // 모든 메시지를 가져와서 스레드별로 그룹핑
   const { data, error } = await supabase
     .from("email_messages")
@@ -72,9 +86,11 @@ export async function GET() {
     unread_count: number;
     last_direction: string;
     last_body_text: string | null;
+    starred: boolean;
   }>();
 
   for (const msg of data || []) {
+    if (deletedIds.has(msg.thread_id)) continue;
     const existing = threadMap.get(msg.thread_id);
     if (!existing) {
       threadMap.set(msg.thread_id, {
@@ -87,6 +103,7 @@ export async function GET() {
         unread_count: msg.direction === "inbound" && !msg.read_at ? 1 : 0,
         last_direction: msg.direction,
         last_body_text: msg.body_text,
+        starred: starredIds.has(msg.thread_id),
       });
     } else {
       existing.message_count++;
@@ -94,11 +111,43 @@ export async function GET() {
     }
   }
 
-  const threads = Array.from(threadMap.values()).sort(
-    (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-  );
+  // 별표 먼저, 그 안에서 최신순
+  const threads = Array.from(threadMap.values()).sort((a, b) => {
+    if (a.starred !== b.starred) return a.starred ? -1 : 1;
+    return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+  });
 
   return NextResponse.json({ threads });
+}
+
+// PATCH: 별표 토글 / DELETE: 스레드 삭제
+export async function PATCH(req: NextRequest) {
+  const { threadId, starred } = await req.json();
+  if (!threadId) return NextResponse.json({ error: "threadId required" }, { status: 400 });
+
+  const supabase = getSupabaseAdmin();
+
+  // upsert
+  const { error } = await supabase
+    .from("email_thread_meta")
+    .upsert({ thread_id: threadId, starred }, { onConflict: "thread_id" });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  const { threadId } = await req.json();
+  if (!threadId) return NextResponse.json({ error: "threadId required" }, { status: 400 });
+
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase
+    .from("email_thread_meta")
+    .upsert({ thread_id: threadId, deleted_at: new Date().toISOString() }, { onConflict: "thread_id" });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }
 
 // POST: 새 이메일 발송 (새 스레드 또는 기존 스레드에 답장)

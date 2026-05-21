@@ -109,6 +109,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { t } = useAdminI18n();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [vocUnread, setVocUnread] = useState(0);
 
   useEffect(() => {
     async function checkAdmin() {
@@ -121,6 +122,21 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     }
     checkAdmin();
   }, []);
+
+  useEffect(() => {
+    if (!authorized) return;
+    async function fetchUnread() {
+      const { count } = await supabase
+        .from("email_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("direction", "inbound")
+        .is("read_at", null);
+      setVocUnread(count || 0);
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [authorized]);
 
   if (loading) {
     return (
@@ -185,6 +201,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[14px] transition-colors ${isActive ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
                   <NavIcon type={item.icon} />
                   {t(item.labelKey)}
+                  {item.icon === "messages" && vocUnread > 0 && (
+                    <span className={`ml-auto text-[10px] font-medium w-[18px] h-[18px] rounded-full flex items-center justify-center ${isActive ? "bg-white text-gray-900" : "bg-[#E8590C] text-white"}`}>
+                      {vocUnread}
+                    </span>
+                  )}
                 </Link>
               );
             })}

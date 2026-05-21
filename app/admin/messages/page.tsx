@@ -14,6 +14,7 @@ interface Thread {
   unread_count: number;
   last_direction: string;
   last_body_text: string | null;
+  starred: boolean;
 }
 
 interface Message {
@@ -152,6 +153,34 @@ export default function MessagesPage() {
     }
   }
 
+  async function handleToggleStar(threadId: string) {
+    const thread = threads.find((t) => t.thread_id === threadId);
+    if (!thread) return;
+    const newStarred = !thread.starred;
+    setThreads((prev) =>
+      prev.map((t) => (t.thread_id === threadId ? { ...t, starred: newStarred } : t))
+    );
+    await fetch("/api/admin/messages", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId, starred: newStarred }),
+    });
+  }
+
+  async function handleDeleteThread(threadId: string) {
+    if (!confirm("이 대화를 삭제하시겠습니까?")) return;
+    await fetch("/api/admin/messages", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId }),
+    });
+    setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+    if (selectedThread === threadId) {
+      setSelectedThread(null);
+      setMessages([]);
+    }
+  }
+
   function formatTime(iso: string) {
     const d = new Date(iso);
     const now = new Date();
@@ -203,39 +232,52 @@ export default function MessagesPage() {
           ) : (
             <div className="divide-y divide-[#F2F4F6]">
               {threads.map((thread) => (
-                <button
+                <div
                   key={thread.thread_id}
-                  onClick={() => loadThread(thread.thread_id)}
-                  className={`w-full text-left px-4 py-3.5 transition-colors ${
+                  className={`w-full text-left px-4 py-3.5 transition-colors cursor-pointer flex items-start gap-2 ${
                     selectedThread === thread.thread_id
                       ? "bg-[#F2F4F6]"
                       : "hover:bg-[#F9FAFB]"
                   }`}
+                  onClick={() => loadThread(thread.thread_id)}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[13px] truncate max-w-[200px] ${
-                      thread.unread_count > 0 ? "font-medium text-[#191F28]" : "text-[#4E5968]"
-                    }`}>
-                      {thread.to_name || thread.to_email}
-                    </span>
-                    <span className="text-[11px] text-[#B0B8C1] flex-shrink-0">
-                      {formatTime(thread.last_message_at)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[12px] text-[#8B95A1] truncate max-w-[240px]">
-                      {thread.last_direction === "inbound" && (
-                        <span className="text-[#3182F6] mr-1">●</span>
-                      )}
-                      {thread.subject}
-                    </p>
-                    {thread.unread_count > 0 && (
-                      <span className="bg-[#3182F6] text-white text-[10px] font-medium w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0">
-                        {thread.unread_count}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleToggleStar(thread.thread_id); }}
+                    className="mt-0.5 flex-shrink-0"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24"
+                      fill={thread.starred ? "#F59E0B" : "none"}
+                      stroke={thread.starred ? "#F59E0B" : "#D1D6DB"}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[13px] truncate max-w-[180px] ${
+                        thread.unread_count > 0 ? "font-medium text-[#191F28]" : "text-[#4E5968]"
+                      }`}>
+                        {thread.to_name || thread.to_email}
                       </span>
-                    )}
+                      <span className="text-[11px] text-[#B0B8C1] flex-shrink-0">
+                        {formatTime(thread.last_message_at)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[12px] text-[#8B95A1] truncate max-w-[220px]">
+                        {thread.last_direction === "inbound" && (
+                          <span className="text-[#3182F6] mr-1">●</span>
+                        )}
+                        {thread.subject}
+                      </p>
+                      {thread.unread_count > 0 && (
+                        <span className="bg-[#3182F6] text-white text-[10px] font-medium w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0">
+                          {thread.unread_count}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -253,6 +295,42 @@ export default function MessagesPage() {
             </div>
           ) : (
             <>
+              {/* 스레드 헤더 */}
+              {(() => {
+                const currentThread = threads.find((t) => t.thread_id === selectedThread);
+                return currentThread ? (
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-[#F2F4F6]">
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-[#191F28] truncate">{currentThread.to_name || currentThread.to_email}</p>
+                      <p className="text-[11px] text-[#8B95A1] truncate">{currentThread.subject}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleToggleStar(selectedThread!)}
+                        className="p-2 rounded-lg hover:bg-[#F2F4F6] transition-colors"
+                        title={currentThread.starred ? "별표 해제" : "별표"}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                          fill={currentThread.starred ? "#F59E0B" : "none"}
+                          stroke={currentThread.starred ? "#F59E0B" : "#B0B8C1"}
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteThread(selectedThread!)}
+                        className="p-2 rounded-lg hover:bg-[#FFF0F0] transition-colors"
+                        title="대화 삭제"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8590C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
               {/* 메시지 목록 */}
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {messages.map((msg) => (

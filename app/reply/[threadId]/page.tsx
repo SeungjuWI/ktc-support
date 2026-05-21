@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 
 export default function ReplyPage() {
   const { threadId } = useParams();
   const [message, setMessage] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [threadInfo, setThreadInfo] = useState<{ to_email: string; to_name: string | null } | null>(null);
+  const [loadingThread, setLoadingThread] = useState(true);
+
+  useEffect(() => {
+    async function loadThread() {
+      try {
+        const res = await fetch(`/api/reply/${threadId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setThreadInfo(data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoadingThread(false);
+      }
+    }
+    loadThread();
+  }, [threadId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,11 +40,7 @@ export default function ReplyPage() {
       const res = await fetch(`/api/reply/${threadId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromEmail: email || undefined,
-          fromName: name || undefined,
-          bodyText: message.trim(),
-        }),
+        body: JSON.stringify({ bodyText: message.trim() }),
       });
 
       if (!res.ok) {
@@ -79,29 +92,16 @@ export default function ReplyPage() {
           Send your message below. / Gửi tin nhắn của bạn bên dưới.
         </p>
 
+        {!loadingThread && threadInfo && (
+          <div className="bg-[#F9FAFB] rounded-xl px-4 py-3 mb-4">
+            <p className="text-[12px] text-[#8B95A1] mb-0.5">From</p>
+            <p className="text-[13px] text-[#191F28]">
+              {threadInfo.to_name ? `${threadInfo.to_name} (${threadInfo.to_email})` : threadInfo.to_email}
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-[12px] text-[#8B95A1] mb-1 block">Name / Tên (optional)</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-[#E5E8EB] text-[14px] text-[#191F28] outline-none focus:border-[#3182F6] transition-colors"
-              placeholder="Your name"
-            />
-          </div>
-
-          <div>
-            <label className="text-[12px] text-[#8B95A1] mb-1 block">Email (optional)</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-[#E5E8EB] text-[14px] text-[#191F28] outline-none focus:border-[#3182F6] transition-colors"
-              placeholder="your@email.com"
-            />
-          </div>
-
           <div>
             <label className="text-[12px] text-[#8B95A1] mb-1 block">Message / Tin nhắn *</label>
             <textarea

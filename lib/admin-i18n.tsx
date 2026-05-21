@@ -27,7 +27,7 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "nav.pool": { ko: "인재풀 등록", en: "Talent Pool", vi: "Đăng ký nhân tài" },
   "nav.roles": { ko: "권한 안내", en: "Permissions", vi: "Phân quyền" },
   "nav.interviews": { ko: "AI 인터뷰", en: "AI Interviews", vi: "Phỏng vấn AI" },
-  "nav.messages": { ko: "메시지", en: "Messages", vi: "Tin nhắn" },
+  "nav.messages": { ko: "VOC", en: "VOC", vi: "VOC" },
   "nav.jd": { ko: "JD 관리", en: "JD Management", vi: "Quản lý JD" },
 
   // AI 인터뷰 관리
@@ -166,9 +166,9 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "pool.empty": { ko: "등록된 포트폴리오가 없습니다", en: "No portfolios registered", vi: "Chưa có portfolio nào" },
   "pool.emptyHint": { ko: "PDF 파일을 업로드하여 인재풀에 등록하세요", en: "Upload PDF files to register in the talent pool", vi: "Tải lên file PDF để đăng ký nhân tài" },
 
-  // 메시지 센터
+  // VOC
   "messages.compose": { ko: "새 메시지", en: "Compose", vi: "Soạn tin" },
-  "messages.empty": { ko: "아직 메시지가 없습니다.", en: "No messages yet.", vi: "Chưa có tin nhắn." },
+  "messages.empty": { ko: "아직 VOC가 없습니다.", en: "No VOC yet.", vi: "Chưa có VOC." },
   "messages.selectThread": { ko: "대화를 선택하세요", en: "Select a conversation", vi: "Chọn cuộc trò chuyện" },
   "messages.replyPlaceholder": { ko: "답장을 입력하세요...", en: "Type your reply...", vi: "Nhập trả lời..." },
   "messages.send": { ko: "보내기", en: "Send", vi: "Gửi" },
