@@ -4,9 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 function getSupabaseAdmin() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    console.error("[Thread API] SUPABASE_SERVICE_ROLE_KEY is not set!");
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    key!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
   );
 }
 
@@ -24,7 +29,9 @@ export async function GET(
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
 
-  console.log("[Thread API]", threadId, "→ rows:", data?.length, "error:", error?.message, "directions:", data?.map((m) => m.direction));
+  // 디버그: 서비스키가 제대로 동작하는지 확인
+  const keyPrefix = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").substring(0, 10);
+  console.log("[Thread API]", threadId, "→ rows:", data?.length, "error:", error?.message, "keyPrefix:", keyPrefix, "directions:", data?.map((m) => m.direction));
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,5 +49,5 @@ export async function GET(
       .in("id", unreadIds);
   }
 
-  return NextResponse.json({ messages: data, _debug: { threadId, count: data?.length } });
+  return NextResponse.json({ messages: data, _debug: { threadId, count: data?.length, keySet: !!process.env.SUPABASE_SERVICE_ROLE_KEY } });
 }
