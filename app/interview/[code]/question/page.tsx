@@ -23,15 +23,16 @@ export default function QuestionPage({ params }: { params: { code: string } }) {
   const [recordStartedAt, setRecordStartedAt] = useState(0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
-  // 브라우저 탭 닫기/새로고침 방지
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  // 브라우저 탭 닫기/새로고침 방지 (네비게이션 전 제거 가능하도록 ref 저장)
+  const beforeUnloadRef = useCallback((e: BeforeUnloadEvent) => {
+    e.preventDefault();
+    e.returnValue = "";
   }, []);
+
+  useEffect(() => {
+    window.addEventListener("beforeunload", beforeUnloadRef);
+    return () => window.removeEventListener("beforeunload", beforeUnloadRef);
+  }, [beforeUnloadRef]);
 
   // 뒤로가기 감지
   useEffect(() => {
@@ -108,6 +109,9 @@ export default function QuestionPage({ params }: { params: { code: string } }) {
   };
 
   const finalize = () => {
+    // beforeunload 리스너 제거 — 안 하면 브라우저 "Leave site?" 다이얼로그가 뜨면서 무한로딩
+    window.removeEventListener("beforeunload", beforeUnloadRef);
+
     // fire-and-forget + keepalive: 페이지 이동해도 요청이 완료되도록
     fetch("/api/interview/finalize", {
       method: "POST",
@@ -120,13 +124,14 @@ export default function QuestionPage({ params }: { params: { code: string } }) {
   };
 
   const handleAbandon = useCallback(async () => {
+    window.removeEventListener("beforeunload", beforeUnloadRef);
     await fetch("/api/interview/abandon", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: params.code }),
     });
     window.location.href = `/interview/${params.code}/abandoned`;
-  }, [params.code]);
+  }, [params.code, beforeUnloadRef]);
 
   if (loading) {
     return <div className="min-h-[calc(100vh-57px)] flex items-center justify-center">

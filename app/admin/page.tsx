@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
     await loadUsers();
   }
 
-  async function updateRole(userId: string, role: "admin" | "user") {
+  async function updateRole(userId: string, role: "super_admin" | "admin" | "user") {
     await supabase
       .from("user_profiles")
       .update({ role, updated_at: new Date().toISOString() })
@@ -173,13 +173,30 @@ export default function AdminUsersPage() {
                 </span>
 
                 <div className="flex items-center gap-2">
-                  {/* 총 관리자만 일반 유저를 관리자로 임명 가능 */}
+                  {/* 총 관리자만 역할 임명 가능 */}
                   {isSuperAdmin && u.role === "user" && tab === "approved" && (
+                    <>
+                      <button
+                        onClick={() => updateRole(u.id, "admin")}
+                        className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      >
+                        관리자 임명
+                      </button>
+                      <button
+                        onClick={() => updateRole(u.id, "super_admin")}
+                        className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors bg-[#FFF8F0] text-[#E8590C] hover:bg-orange-100"
+                      >
+                        총관리자 임명
+                      </button>
+                    </>
+                  )}
+
+                  {isSuperAdmin && u.role === "admin" && tab === "approved" && (
                     <button
-                      onClick={() => updateRole(u.id, "admin")}
-                      className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      onClick={() => updateRole(u.id, "super_admin")}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors bg-[#FFF8F0] text-[#E8590C] hover:bg-orange-100"
                     >
-                      관리자 임명
+                      총관리자 임명
                     </button>
                   )}
 
@@ -200,7 +217,7 @@ export default function AdminUsersPage() {
                     </>
                   )}
 
-                  {tab === "approved" && u.role === "admin" && isSuperAdmin && (
+                  {tab === "approved" && (u.role === "admin" || u.role === "super_admin") && isSuperAdmin && u.email !== "wsj@likelion.net" && (
                     <button
                       onClick={() => updateRole(u.id, "user")}
                       className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors"

@@ -84,8 +84,7 @@ export default function RolesPage() {
       </div>
 
       <p className="text-[12px] text-gray-400 mt-5 px-1 leading-[18px]">
-        * 총 관리자는 wsj@likelion.net 계정에만 부여됩니다.<br />
-        * 관리자 임명은 총 관리자가 사용자 관리 &gt; 승인 탭에서 할 수 있습니다.
+        * 총 관리자 및 관리자 임명은 총 관리자가 사용자 관리 &gt; 승인 탭에서 할 수 있습니다.
       </p>
     </div>
   );

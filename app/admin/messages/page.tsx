@@ -112,7 +112,7 @@ export default function MessagesPage() {
       setComposeToName("");
       setComposeSubject("");
       setComposeBody("");
-      loadThreads();
+      await loadThreads();
     } catch {
       alert("발송 실패");
     } finally {
@@ -126,6 +126,24 @@ export default function MessagesPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     const thread = threads.find((t) => t.thread_id === selectedThread);
+    const body = replyBody.trim();
+
+    // 낙관적 업데이트: 보내기 누르면 바로 화면에 표시
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      thread_id: selectedThread,
+      direction: "outbound",
+      from_email: "",
+      to_email: thread?.to_email || "",
+      to_name: thread?.to_name || null,
+      subject: `Re: ${thread?.subject || ""}`,
+      body_text: body,
+      body_html: "",
+      read_at: null,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setReplyBody("");
 
     try {
       const res = await fetch("/api/admin/messages", {
@@ -135,18 +153,23 @@ export default function MessagesPage() {
           toEmail: thread?.to_email,
           toName: thread?.to_name || undefined,
           subject: `Re: ${thread?.subject || ""}`,
-          bodyText: replyBody,
+          bodyText: body,
           threadId: selectedThread,
           sentBy: session?.user?.id || undefined,
         }),
       });
 
+      const resData = await res.json();
       if (!res.ok) throw new Error("Failed");
+      if (resData.dbError) console.warn("VOC DB 저장 실패:", resData.dbError);
 
-      setReplyBody("");
-      loadThread(selectedThread);
+      // 발송 성공 후 실제 데이터로 갱신
+      await loadThread(selectedThread);
       loadThreads();
     } catch {
+      // 실패 시 낙관적 메시지 제거
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
+      setReplyBody(body);
       alert("답장 실패");
     } finally {
       setReplying(false);

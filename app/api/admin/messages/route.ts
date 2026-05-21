@@ -179,20 +179,24 @@ export async function POST(req: NextRequest) {
   }
 
   // DB 로깅
-  const { error: insertErr } = await supabase.from("email_messages").insert({
+  const insertPayload: Record<string, unknown> = {
     thread_id: finalThreadId,
     direction: "outbound",
-    from_email: process.env.GMAIL_USER,
+    from_email: process.env.GMAIL_USER || "unknown",
     to_email: toEmail,
     to_name: toName || null,
     subject,
     body_html: bodyHtml,
     body_text: bodyText,
-    sent_by: sentBy || null,
-  });
+  };
+  // sent_by는 유효한 UUID일 때만 포함 (외래키 에러 방지)
+  if (sentBy) insertPayload.sent_by = sentBy;
+
+  const { error: insertErr } = await supabase.from("email_messages").insert(insertPayload);
 
   if (insertErr) {
-    console.error("DB insert error:", insertErr.message);
+    console.error("DB insert error:", insertErr.message, insertErr);
+    return NextResponse.json({ success: true, threadId: finalThreadId, dbError: insertErr.message });
   }
 
   return NextResponse.json({ success: true, threadId: finalThreadId });
