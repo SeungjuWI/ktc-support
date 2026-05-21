@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { transcribeAudio, scoreAnswer } from "@/lib/interview/openai";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 function getSupabaseAdmin() {
   return createClient(
@@ -45,19 +44,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: question } = await supabase
-      .from("interview_questions")
-      .select("*")
-      .eq("id", questionId)
-      .single();
-
-    if (!question) {
-      return NextResponse.json(
-        { success: false, message: "Question not found" },
-        { status: 404 }
-      );
-    }
-
     const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
 
     const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
@@ -78,40 +64,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const expectedLang: "vi" | "en" =
-      questionId === "q1_language" || questionId === "q6_certificates" ? "en" : "vi";
-
-    let transcript = "";
-    let detectedLang = expectedLang;
-    try {
-      const result = await transcribeAudio(audioBuffer, `audio.${ext}`, expectedLang);
-      transcript = result.text;
-      detectedLang = result.detectedLanguage as "vi" | "en";
-    } catch (err) {
-      console.error("STT error:", err);
-      transcript = "";
-    }
-
-    let score = 1;
-    let reasoning = "채점 실패";
-    if (transcript.trim().length > 0) {
-      try {
-        const result = await scoreAnswer({
-          questionText: question.question_text_en || question.question_text_vi || "",
-          category: question.category,
-          rubric: question.rubric,
-          transcript,
-          expectedLanguage: expectedLang,
-        });
-        score = result.score;
-        reasoning = result.reasoning;
-      } catch (err) {
-        console.error("Scoring error:", err);
-      }
-    } else {
-      reasoning = "답변이 비어있거나 음성 인식 실패";
-    }
-
     const { error: insertError } = await supabase
       .from("interview_responses")
       .upsert(
@@ -120,10 +72,10 @@ export async function POST(req: NextRequest) {
           question_id: questionId,
           question_order: questionOrder,
           audio_storage_path: audioPath,
-          transcript,
-          transcript_language: detectedLang,
-          score,
-          score_reasoning: reasoning,
+          transcript: "",
+          transcript_language: "vi",
+          score: null,
+          score_reasoning: "채점 대기중",
           duration_seconds: durationSec,
         },
         { onConflict: "session_id,question_id" }
@@ -137,7 +89,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, score });
+    // STT + 채점을 별도 서버리스 함수로 fire-and-forget
+    const scoreUrl = new URL("/api/interview/score", req.url);
+    fetch(scoreUrl.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: session.id,
+        questionId,
+        audioPath,
+        mimeType,
+      }),
+    }).catch((err) => console.error("Score trigger failed:", err));
+
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Submit error:", err);
     return NextResponse.json(

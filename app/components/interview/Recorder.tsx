@@ -59,8 +59,16 @@ async function playTtsViaContext(url: string): Promise<void> {
     source.connect(ctx.destination);
 
     return new Promise((resolve) => {
+      // 안전장치: TTS 길이 + 3초 후에도 onended 안 불리면 강제 resolve
+      const fallbackMs = (audioBuf.duration + 3) * 1000;
+      const fallbackTimer = setTimeout(() => {
+        ctx.close().catch(() => {});
+        resolve();
+      }, fallbackMs);
+
       source.onended = () => {
-        ctx.close();
+        clearTimeout(fallbackTimer);
+        ctx.close().catch(() => {});
         resolve();
       };
       source.start();

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { generateFinalSummary } from "@/lib/interview/openai";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function getSupabaseAdmin() {
   return createClient(
@@ -25,11 +25,33 @@ export async function POST(req: NextRequest) {
     .single();
   if (!session) return NextResponse.json({ success: false }, { status: 404 });
 
-  const { data: responses } = await supabase
-    .from("interview_responses")
-    .select("*, interview_questions(category)")
-    .eq("session_id", session.id)
-    .order("question_order");
+  // 비동기 채점 완료 대기 (최대 30초, 2초 간격 폴링)
+  let responses: Record<string, any>[] | null = null;
+  for (let i = 0; i < 15; i++) {
+    const { data } = await supabase
+      .from("interview_responses")
+      .select("*, interview_questions(category)")
+      .eq("session_id", session.id)
+      .order("question_order");
+
+    if (!data || data.length === 0) {
+      return NextResponse.json({ success: false, message: "No responses" }, { status: 400 });
+    }
+
+    const allScored = data.every((r: Record<string, any>) => r.score !== null);
+    if (allScored) {
+      responses = data;
+      break;
+    }
+
+    // 아직 채점 안 된 응답이 있으면 대기
+    if (i < 14) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    } else {
+      // 타임아웃 — 현재까지 결과로 진행
+      responses = data;
+    }
+  }
 
   if (!responses || responses.length === 0) {
     return NextResponse.json({ success: false, message: "No responses" }, { status: 400 });
