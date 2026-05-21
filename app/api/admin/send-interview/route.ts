@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { randomUUID } from "crypto";
 
 export const maxDuration = 60;
 
@@ -28,6 +29,7 @@ const transporter = nodemailer.createTransport({
 
 const INTERVIEW_BASE = "https://vtm-neon.vercel.app/interview";
 const LOGO_URL = "https://vtm-neon.vercel.app/logo.png";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://vtm-neon.vercel.app";
 
 function getDefaultDeadlineISO(): string {
   // 내일 오전 10시 베트남 시간 (GMT+7)
@@ -53,9 +55,10 @@ function formatDeadlineForEmail(isoStr: string): string {
   return `${months[Number(mo) - 1]} ${Number(day)}, ${year} at ${hr}:${min}`;
 }
 
-function buildEmailHtml(name: string, company: string, code: string, deadlineISO: string): string {
+function buildEmailHtml(name: string, company: string, code: string, deadlineISO: string, threadId: string): string {
   const interviewUrl = INTERVIEW_BASE;
   const deadlineDisplay = formatDeadlineForEmail(deadlineISO);
+  const replyUrl = `${BASE_URL}/reply/${threadId}`;
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
       <div style="margin-bottom: 28px;">
@@ -115,8 +118,15 @@ function buildEmailHtml(name: string, company: string, code: string, deadlineISO
       </div>
 
       <p style="font-size: 15px; color: #4E5968; line-height: 1.8; margin: 0 0 8px;">
-        If you have any questions, please reply to this email.
+        If you have any questions, please click the button below to contact us.
       </p>
+
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${replyUrl}"
+           style="display: inline-block; background: #F2F4F6; color: #4E5968; text-decoration: none; padding: 10px 24px; border-radius: 10px; font-size: 14px;">
+          Contact Us / Liên hệ
+        </a>
+      </div>
 
       <p style="font-size: 15px; color: #4E5968; line-height: 1.8; margin: 0 0 32px;">
         Best of luck!
@@ -128,8 +138,7 @@ function buildEmailHtml(name: string, company: string, code: string, deadlineISO
 
       <div style="border-top: 1px solid #E5E8EB; padding-top: 20px;">
         <p style="font-size: 12px; color: #B0B8C1; line-height: 1.6; margin: 0;">
-          VTM Recruitment · Likelion<br/>
-          Contact: wsj@likelion.net
+          VTM Recruitment · Likelion
         </p>
       </div>
     </div>
@@ -146,12 +155,27 @@ export async function POST(req: NextRequest) {
     const deadline = getDefaultDeadlineISO();
     const company = body.company || "Test Company";
     const name = body.name || "Test User";
+    const threadId = randomUUID();
+    const subject = `[${company}] Congratulations on passing the screening — AI Interview link`;
+    const emailHtml = buildEmailHtml(name, company, code, deadline, threadId);
     try {
       await transporter.sendMail({
         from: `"VTM Recruitment" <${process.env.GMAIL_USER}>`,
         to: body.testEmail,
-        subject: `[${company}] Congratulations on passing the screening — AI Interview link`,
-        html: buildEmailHtml(name, company, code, deadline),
+        subject,
+        html: emailHtml,
+      });
+      // DB 로깅
+      const supabase = getSupabaseAdmin();
+      await supabase.from("email_messages").insert({
+        thread_id: threadId,
+        direction: "outbound",
+        from_email: process.env.GMAIL_USER,
+        to_email: body.testEmail,
+        to_name: name,
+        subject,
+        body_html: emailHtml,
+        body_text: `AI Interview invitation for ${company}\nAccess Code: ${code}\nDeadline: ${deadline}`,
       });
       return NextResponse.json({ success: true, code, deadline, sent: true });
     } catch (e) {
@@ -214,6 +238,7 @@ export async function POST(req: NextRequest) {
     }
 
     const company = c.applied_company || c.applied_job || "the position";
+    const threadId = randomUUID();
 
     // interview_session 생성
     const { error: insertErr } = await supabase.from("interview_sessions").insert({
@@ -232,12 +257,26 @@ export async function POST(req: NextRequest) {
     }
 
     // 이메일 발송
+    const emailSubject = `[${company}] Congratulations on passing the screening — AI Interview link`;
+    const emailHtml = buildEmailHtml(c.full_name, company, code, deadline, threadId);
     try {
       await transporter.sendMail({
         from: `"VTM Recruitment" <${process.env.GMAIL_USER}>`,
         to: c.email,
-        subject: `[${company}] Congratulations on passing the screening — AI Interview link`,
-        html: buildEmailHtml(c.full_name, company, code, deadline),
+        subject: emailSubject,
+        html: emailHtml,
+      });
+
+      // 이메일 DB 로깅
+      await supabase.from("email_messages").insert({
+        thread_id: threadId,
+        direction: "outbound",
+        from_email: process.env.GMAIL_USER,
+        to_email: c.email,
+        to_name: c.full_name,
+        subject: emailSubject,
+        body_html: emailHtml,
+        body_text: `AI Interview invitation for ${company}\nAccess Code: ${code}\nDeadline: ${deadline}`,
       });
 
       // 후보자 상태 업데이트

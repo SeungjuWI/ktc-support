@@ -14,6 +14,11 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "common.all": { ko: "전체", en: "All", vi: "Tất cả" },
   "common.close": { ko: "닫기", en: "Close", vi: "Đóng" },
 
+  // 사이드바 그룹
+  "nav.group.internal": { ko: "내부 관리", en: "Internal", vi: "Nội bộ" },
+  "nav.group.ktc": { ko: "KTC 채용", en: "KTC Recruiting", vi: "Tuyển dụng KTC" },
+  "nav.group.vtm": { ko: "VTM 인재 열람", en: "VTM Talents", vi: "Nhân tài VTM" },
+
   // 사이드바
   "nav.users": { ko: "사용자 관리", en: "User Management", vi: "Quản lý người dùng" },
   "nav.candidates": { ko: "후보자 관리", en: "Candidate Management", vi: "Quản lý ứng viên" },
@@ -22,6 +27,7 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "nav.pool": { ko: "인재풀 등록", en: "Talent Pool", vi: "Đăng ký nhân tài" },
   "nav.roles": { ko: "권한 안내", en: "Permissions", vi: "Phân quyền" },
   "nav.interviews": { ko: "AI 인터뷰", en: "AI Interviews", vi: "Phỏng vấn AI" },
+  "nav.messages": { ko: "메시지", en: "Messages", vi: "Tin nhắn" },
   "nav.jd": { ko: "JD 관리", en: "JD Management", vi: "Quản lý JD" },
 
   // AI 인터뷰 관리
@@ -159,6 +165,19 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "pool.viewCard": { ko: "카드 보기", en: "View Card", vi: "Xem thẻ" },
   "pool.empty": { ko: "등록된 포트폴리오가 없습니다", en: "No portfolios registered", vi: "Chưa có portfolio nào" },
   "pool.emptyHint": { ko: "PDF 파일을 업로드하여 인재풀에 등록하세요", en: "Upload PDF files to register in the talent pool", vi: "Tải lên file PDF để đăng ký nhân tài" },
+
+  // 메시지 센터
+  "messages.compose": { ko: "새 메시지", en: "Compose", vi: "Soạn tin" },
+  "messages.empty": { ko: "아직 메시지가 없습니다.", en: "No messages yet.", vi: "Chưa có tin nhắn." },
+  "messages.selectThread": { ko: "대화를 선택하세요", en: "Select a conversation", vi: "Chọn cuộc trò chuyện" },
+  "messages.replyPlaceholder": { ko: "답장을 입력하세요...", en: "Type your reply...", vi: "Nhập trả lời..." },
+  "messages.send": { ko: "보내기", en: "Send", vi: "Gửi" },
+  "messages.sending": { ko: "발송 중...", en: "Sending...", vi: "Đang gửi..." },
+  "messages.newMessage": { ko: "새 메시지 작성", en: "New Message", vi: "Tin nhắn mới" },
+  "messages.toEmail": { ko: "받는 사람", en: "To", vi: "Đến" },
+  "messages.toName": { ko: "이름", en: "Name", vi: "Tên" },
+  "messages.subject": { ko: "제목", en: "Subject", vi: "Tiêu đề" },
+  "messages.body": { ko: "내용", en: "Message", vi: "Nội dung" },
 
   // 상태
   "status.new": { ko: "대기", en: "Pending", vi: "Chờ" },

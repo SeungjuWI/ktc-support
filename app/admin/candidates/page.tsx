@@ -1066,8 +1066,13 @@ function SendInterviewModal({ count, sampleName, sampleCompany, onConfirm, onClo
                   </div>
 
                   <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 8px" }}>
-                    If you have any questions, please reply to this email.
+                    If you have any questions, please click the button below to contact us.
                   </p>
+                  <div style={{ textAlign: "center", marginBottom: 16 }}>
+                    <span style={{ display: "inline-block", background: "#F2F4F6", color: "#4E5968", padding: "8px 20px", borderRadius: 10, fontSize: 13 }}>
+                      Contact Us / Liên hệ
+                    </span>
+                  </div>
                   <p style={{ fontSize: 14, color: "#4E5968", lineHeight: 1.8, margin: "0 0 24px" }}>
                     Best of luck!
                   </p>
@@ -1077,8 +1082,7 @@ function SendInterviewModal({ count, sampleName, sampleCompany, onConfirm, onClo
 
                   <div style={{ borderTop: "1px solid #E5E8EB", paddingTop: 16 }}>
                     <p style={{ fontSize: 11, color: "#B0B8C1", lineHeight: 1.6, margin: 0 }}>
-                      VTM Recruitment · Likelion<br/>
-                      Contact: wsj@likelion.net
+                      VTM Recruitment · Likelion
                     </p>
                   </div>
                 </div>

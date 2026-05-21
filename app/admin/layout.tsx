@@ -8,14 +8,18 @@ import { supabase } from "@/lib/supabase";
 import { AdminI18nProvider, useAdminI18n, LangSelector } from "@/lib/admin-i18n";
 
 const NAV_KEYS = [
-  { href: "/admin", labelKey: "nav.users", icon: "users" },
-  { href: "/admin/candidates", labelKey: "nav.candidates", icon: "candidates" },
-  { href: "/admin/pool", labelKey: "nav.pool", icon: "pool" },
-  { href: "/admin/talents", labelKey: "nav.talents", icon: "talents" },
-  { href: "/admin/interviews", labelKey: "nav.interviews", icon: "interviews" },
-  { href: "/admin/inquiries", labelKey: "nav.inquiries", icon: "inquiries" },
-  { href: "/admin/jd", labelKey: "nav.jd", icon: "jd" },
-  { href: "/admin/roles", labelKey: "nav.roles", icon: "roles" },
+  // 내부 관리
+  { href: "/admin", labelKey: "nav.users", icon: "users", group: "internal" },
+  { href: "/admin/roles", labelKey: "nav.roles", icon: "roles", group: "internal" },
+  // KTC 채용 업무
+  { href: "/admin/jd", labelKey: "nav.jd", icon: "jd", group: "ktc" },
+  { href: "/admin/candidates", labelKey: "nav.candidates", icon: "candidates", group: "ktc" },
+  { href: "/admin/pool", labelKey: "nav.pool", icon: "pool", group: "ktc" },
+  { href: "/admin/interviews", labelKey: "nav.interviews", icon: "interviews", group: "ktc" },
+  { href: "/admin/messages", labelKey: "nav.messages", icon: "messages", group: "ktc" },
+  // VTM 인재 열람
+  { href: "/admin/talents", labelKey: "nav.talents", icon: "talents", group: "vtm" },
+  { href: "/admin/inquiries", labelKey: "nav.inquiries", icon: "inquiries", group: "vtm" },
 ];
 
 function NavIcon({ type }: { type: string }) {
@@ -61,6 +65,14 @@ function NavIcon({ type }: { type: string }) {
         <path d="M19 10v2a7 7 0 01-14 0v-2" />
         <line x1="12" y1="19" x2="12" y2="23" />
         <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    );
+  }
+  if (type === "messages") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
       </svg>
     );
   }
@@ -150,21 +162,40 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="mx-auto max-w-[1080px] px-5 py-6 flex gap-6">
         {/* 사이드바 */}
         <nav className="w-[200px] flex-shrink-0 hidden md:block">
-          <div className="flex flex-col gap-1">
-            {NAV_KEYS.map((item) => {
-              const isActive = item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
+          <div className="flex flex-col gap-0.5">
+            {/* 내부 관리 */}
+            <p className="px-3 pt-1 pb-1.5 text-[11px] text-[#B0B8C1] tracking-wide">{t("nav.group.internal")}</p>
+            {NAV_KEYS.filter((i) => i.group === "internal").map((item) => {
+              const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[14px] transition-colors ${
-                    isActive
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
+                <Link key={item.href} href={item.href}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[14px] transition-colors ${isActive ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+                  <NavIcon type={item.icon} />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+            {/* KTC 채용 업무 */}
+            <div className="h-px bg-[#F2F4F6] my-2" />
+            <p className="px-3 pt-1 pb-1.5 text-[11px] text-[#B0B8C1] tracking-wide">{t("nav.group.ktc")}</p>
+            {NAV_KEYS.filter((i) => i.group === "ktc").map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link key={item.href} href={item.href}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[14px] transition-colors ${isActive ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+                  <NavIcon type={item.icon} />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+            {/* VTM 인재 열람 */}
+            <div className="h-px bg-[#F2F4F6] my-2" />
+            <p className="px-3 pt-1 pb-1.5 text-[11px] text-[#B0B8C1] tracking-wide">{t("nav.group.vtm")}</p>
+            {NAV_KEYS.filter((i) => i.group === "vtm").map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link key={item.href} href={item.href}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[14px] transition-colors ${isActive ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
                   <NavIcon type={item.icon} />
                   {t(item.labelKey)}
                 </Link>
