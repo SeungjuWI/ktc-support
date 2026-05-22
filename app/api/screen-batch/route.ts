@@ -54,16 +54,19 @@ export async function POST() {
         let passed = 0;
         let failed = 0;
         let errors = 0;
+        let completed = 0;
 
-        for (let i = 0; i < matchable.length; i++) {
-          const c = matchable[i];
+        const CONCURRENCY = 5;
+
+        // 한 명을 스크리닝하는 함수
+        async function processOne(c: (typeof matchable)[0]) {
           const jobCode = matchJobCode(c.applied_job || "", allCodes)!;
           const jd = JD_MAP[jobCode];
           const jdText = buildJDText(jd);
 
           send({
             type: "screening",
-            current: i + 1,
+            current: completed + 1,
             total,
             name: c.full_name,
             company: jd.company,
@@ -109,20 +112,20 @@ export async function POST() {
 
               if (result.verdict === "PASS") {
                 passed++;
-                // 합격 시 자동으로 인재 카드 생성 (PDF 버퍼 포함 → 사진 추출)
                 await createTalentCard(supabase, c, result, jobCode, result.pdfBuffer);
               } else {
                 failed++;
               }
 
+              completed++;
               send({
                 type: "result",
-                current: i + 1,
+                current: completed,
                 total,
                 name: c.full_name,
                 score: result.score,
                 verdict: result.verdict,
-                progress: Math.round(((i + 1) / total) * 100),
+                progress: Math.round((completed / total) * 100),
               });
             } else {
               errors++;
@@ -132,15 +135,16 @@ export async function POST() {
                 rejection_reason: errMsg,
                 updated_at: new Date().toISOString(),
               }).eq("id", c.id);
+              completed++;
               send({
                 type: "result",
-                current: i + 1,
+                current: completed,
                 total,
                 name: c.full_name,
                 score: null,
                 verdict: "ERROR",
                 error: errMsg,
-                progress: Math.round(((i + 1) / total) * 100),
+                progress: Math.round((completed / total) * 100),
               });
             }
           } catch (err) {
@@ -150,21 +154,23 @@ export async function POST() {
               rejection_reason: err instanceof Error ? err.message : "Unknown error",
               updated_at: new Date().toISOString(),
             }).eq("id", c.id);
+            completed++;
             send({
               type: "result",
-              current: i + 1,
+              current: completed,
               total,
               name: c.full_name,
               score: null,
               verdict: "ERROR",
-              progress: Math.round(((i + 1) / total) * 100),
+              progress: Math.round((completed / total) * 100),
             });
           }
+        }
 
-          // Rate limiting: 빠르게 보내되 429 나면 대기
-          if (i < matchable.length - 1) {
-            await new Promise((r) => setTimeout(r, 1500));
-          }
+        // 동시 5명씩 병렬 처리
+        for (let i = 0; i < matchable.length; i += CONCURRENCY) {
+          const batch = matchable.slice(i, i + CONCURRENCY);
+          await Promise.allSettled(batch.map((c) => processOne(c)));
         }
 
         send({ type: "done", total, passed, failed, errors, skipped: skippedCount });
