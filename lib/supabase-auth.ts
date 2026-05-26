@@ -5,10 +5,11 @@ export type UserProfile = {
   email: string
   name: string
   avatar_url: string
-  role: 'super_admin' | 'admin' | 'user'
+  role: 'super_admin' | 'admin' | 'user' | 'company_admin' | 'employee'
   status: 'pending' | 'approved' | 'rejected'
   company_name: string | null
   contact_name: string | null
+  company_id: string | null
 }
 
 export async function signInWithGoogle() {

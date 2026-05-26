@@ -10,7 +10,9 @@ import { AdminI18nProvider, useAdminI18n, LangSelector } from "@/lib/admin-i18n"
 const NAV_KEYS = [
   // 내부 관리
   { href: "/admin", labelKey: "nav.users", icon: "users", group: "internal" },
+  { href: "/admin/companies", labelKey: "nav.companies", icon: "companies", group: "internal" },
   { href: "/admin/roles", labelKey: "nav.roles", icon: "roles", group: "internal" },
+  { href: "/admin/dev", labelKey: "nav.dev", icon: "dev", group: "internal" },
   // KTC 채용 업무
   { href: "/admin/jd", labelKey: "nav.jd", icon: "jd", group: "ktc" },
   { href: "/admin/candidates", labelKey: "nav.candidates", icon: "candidates", group: "ktc" },
@@ -103,6 +105,22 @@ function NavIcon({ type }: { type: string }) {
         <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
         <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
         <path d="M12 11l4 4M12 11l-4 4M12 11v8" />
+      </svg>
+    );
+  }
+  if (type === "dev") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
+      </svg>
+    );
+  }
+  if (type === "companies") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
       </svg>
     );
   }

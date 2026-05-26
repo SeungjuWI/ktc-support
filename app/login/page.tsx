@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { signInWithGoogle, signOut, getUserProfile } from "@/lib/supabase-auth";
 import { Header } from "@/app/components/Header";
 import type { User } from "@supabase/supabase-js";
 
 type UserProfile = {
-  role: "super_admin" | "admin" | "user";
+  role: "super_admin" | "admin" | "user" | "company_admin" | "employee";
   status: "pending" | "approved" | "rejected";
   name: string;
   email: string;
@@ -17,7 +18,11 @@ type UserProfile = {
   contact_name: string | null;
 };
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const initialType = searchParams.get("type") === "work" ? "work" : "talent";
+  const [loginType, setLoginType] = useState<"talent" | "work">(initialType);
+
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,14 +157,47 @@ export default function LoginPage() {
           {/* 로그인 안 된 상태 */}
           {!user && (
             <>
+              {/* 모드 선택 탭 */}
+              <div className="flex bg-gray-100 rounded-xl p-1 mb-8">
+                <button
+                  onClick={() => setLoginType("talent")}
+                  className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-medium transition-colors ${
+                    loginType === "talent" ? "bg-white text-gray-900" : "text-gray-500"
+                  }`}
+                >
+                  인재 열람
+                </button>
+                <button
+                  onClick={() => setLoginType("work")}
+                  className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-medium transition-colors ${
+                    loginType === "work" ? "bg-white text-gray-900" : "text-gray-500"
+                  }`}
+                >
+                  기업 관리 / 직원
+                </button>
+              </div>
+
               <div className="text-center mb-10">
                 <img src="/logo.png" alt="" width={56} height={56} className="rounded-[8px] mx-auto mb-5" />
-                <h1 className="text-[24px] font-medium text-gray-900 tracking-tight mb-3">
-                  검증된 베트남 IT 인재,<br />지금 바로 확인하세요
-                </h1>
-                <p className="text-[14px] text-gray-500 leading-relaxed">
-                  이력서 분석부터 능력치 평가까지 완료된<br />인재 카드를 열람할 수 있습니다
-                </p>
+                {loginType === "work" ? (
+                  <>
+                    <h1 className="text-[24px] font-medium text-gray-900 tracking-tight mb-3">
+                      팀에 합류하세요
+                    </h1>
+                    <p className="text-[14px] text-gray-500 leading-relaxed">
+                      초대받은 Google 계정으로 로그인하면<br />바로 업무를 시작할 수 있습니다
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-[24px] font-medium text-gray-900 tracking-tight mb-3">
+                      검증된 베트남 IT 인재,<br />지금 바로 확인하세요
+                    </h1>
+                    <p className="text-[14px] text-gray-500 leading-relaxed">
+                      이력서 분석부터 능력치 평가까지 완료된<br />인재 카드를 열람할 수 있습니다
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="bg-white border-[0.5px] border-gray-200/60 rounded-2xl p-6">
@@ -176,33 +214,61 @@ export default function LoginPage() {
                   Google 계정으로 로그인
                 </button>
                 <p className="text-[12px] text-gray-400 text-center mt-4">
-                  기업 담당자 계정으로 로그인해주세요
+                  {loginType === "work" ? "승인된 계정으로 로그인해주세요" : "기업 담당자 계정으로 로그인해주세요"}
                 </p>
               </div>
 
-              <div className="flex items-center justify-center gap-4 mt-8">
-                <div className="flex items-center gap-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                    <path d="M22 4L12 14.01l-3-3" />
-                  </svg>
-                  <span className="text-[12px] text-gray-500">KTC 검증 인재</span>
+              {loginType === "talent" && (
+                <div className="flex items-center justify-center gap-4 mt-8">
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">KTC 검증 인재</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">능력치 카드</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">즉시 채용</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                    <path d="M22 4L12 14.01l-3-3" />
-                  </svg>
-                  <span className="text-[12px] text-gray-500">능력치 카드</span>
+              )}
+
+              {loginType === "work" && (
+                <div className="flex items-center justify-center gap-4 mt-8">
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">출퇴근 체크</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">업무 관리</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <path d="M22 4L12 14.01l-3-3" />
+                    </svg>
+                    <span className="text-[12px] text-gray-500">일일 보고</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                    <path d="M22 4L12 14.01l-3-3" />
-                  </svg>
-                  <span className="text-[12px] text-gray-500">즉시 채용</span>
-                </div>
-              </div>
+              )}
             </>
           )}
 
@@ -401,9 +467,11 @@ export default function LoginPage() {
                   <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
                     profile.role === "super_admin" ? "text-[#E8590C] bg-[#FFF8F0]" :
                     profile.role === "admin" ? "text-blue-500 bg-blue-50" :
+                    profile.role === "company_admin" ? "text-[#1D9E75] bg-[#E6F7F1]" :
+                    profile.role === "employee" ? "text-[#6B7684] bg-[#F2F4F6]" :
                     "text-gray-500 bg-gray-100"
                   }`}>
-                    {profile.role === "super_admin" ? "총 관리자" : profile.role === "admin" ? "관리자" : "일반"}
+                    {profile.role === "super_admin" ? "총 관리자" : profile.role === "admin" ? "관리자" : profile.role === "company_admin" ? "기업 관리자" : profile.role === "employee" ? "직원" : "일반"}
                   </span>
                 </div>
 
@@ -448,5 +516,17 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
+        <p className="text-[14px] text-gray-500">로딩 중...</p>
+      </main>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
