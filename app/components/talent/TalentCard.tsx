@@ -1,4 +1,4 @@
-import { Talent, toInitials } from "@/lib/types";
+import { Talent } from "@/lib/types";
 
 function getScoreStyle(score: number) {
   if (score >= 85) return "bg-grade-s-bg text-grade-s-text";
@@ -20,15 +20,7 @@ export function TalentCard({ talent, blurPhoto }: { talent: Talent; blurPhoto?: 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer transition-all duration-100 hover:border-gray-300 active:scale-[0.98]">
       <div className="flex items-start justify-between mb-3">
-        {talent.photo_url ? (
-          <img src={talent.photo_url} alt="" className={`w-[42px] h-[42px] rounded-full object-cover ${blurPhoto ? "blur-[2px]" : ""}`} />
-        ) : (
-          <div className="w-[42px] h-[42px] rounded-full bg-blue-50 flex items-center justify-center">
-            <span className="text-[13px] font-medium text-blue-500">
-              {toInitials(talent.name)}
-            </span>
-          </div>
-        )}
+        <img src={talent.photo_url || "/default-profile.png"} alt="" className={`w-[42px] h-[42px] rounded-full object-cover ${blurPhoto ? "blur-[2px]" : ""}`} />
         <span className={`text-[13px] font-medium px-2.5 py-[3px] rounded-full ${getScoreStyle(talent.ovr_score)}`}>
           {talent.ovr_score}
         </span>

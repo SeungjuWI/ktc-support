@@ -1,6 +1,6 @@
 "use client";
 
-import { Talent, toInitials } from "@/lib/types";
+import { Talent } from "@/lib/types";
 import { RadarChart } from "./RadarChart";
 import { AnimatedOVR } from "./AnimatedOVR";
 
@@ -39,15 +39,7 @@ export function AbilityCard({ talent }: { talent: Talent }) {
     <div className="bg-white border-[0.5px] border-gray-200/60 rounded-[20px] p-6 mb-3 animate-section">
       {/* 헤더 */}
       <div className="flex items-start gap-4 mb-6">
-        {talent.photo_url ? (
-          <img src={talent.photo_url} alt="" className="w-[72px] h-[72px] rounded-full object-cover" />
-        ) : (
-          <div className="w-[72px] h-[72px] rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <span className="text-[22px] font-medium text-blue-500">
-              {toInitials(talent.name)}
-            </span>
-          </div>
-        )}
+        <img src={talent.photo_url || "/default-profile.png"} alt="" className="w-[72px] h-[72px] rounded-full object-cover flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-[16px] font-medium text-gray-900 mb-1 leading-tight">
             {talent.role}
