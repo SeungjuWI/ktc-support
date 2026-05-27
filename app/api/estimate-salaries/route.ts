@@ -33,24 +33,6 @@ const REFERENCE_DATA = `아래는 실제 매칭된 베트남 IT 인재의 월급
 - IT Comtor/BrSE Junior: 8M~12M, Mid: 10M~18M, Senior: 16M~25M
 - Marketing Junior: 6M~10M, Mid: 10M~16M, Senior: 14M~22M`;
 
-const PROMPT = `You are a Vietnam IT salary estimation expert.
-Given a talent profile, estimate a realistic monthly salary range (Gross VND) for this person working remotely for a Korean company.
-
-${REFERENCE_DATA}
-
-## Rules
-1. Consider: role, years_exp, top_skills, skill depth/breadth, career_history (company tier, progression), ovr_score, abilities
-2. Higher ovr_score (85+) = top of range or above. Lower (<55) = bottom of range.
-3. Niche/in-demand skills (AI/ML, DevOps, Cloud, Kubernetes, React Native) command premium
-4. Career progression (promotions, tier-1 companies) = higher salary
-5. Return a TIGHT range (max should be ~1.5x~2x of min, not wider)
-6. Round to nearest 500,000 VND
-7. Return ONLY JSON: {"salary_min_vnd": number, "salary_max_vnd": number}
-
-## Talent Profile
-{PROFILE}
-
-Return ONLY the JSON object.`;
 
 interface TalentRow {
   id: string;
