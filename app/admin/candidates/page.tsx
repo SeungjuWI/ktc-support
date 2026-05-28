@@ -6,6 +6,7 @@ import { updateTalentVerification } from "@/lib/create-talent-card";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { JD_MAP, type JobDescription } from "@/lib/jd-data";
 import { getUserProfile } from "@/lib/supabase-auth";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 function Dropdown({ value, onChange, options, placeholder }: {
   value: string;
@@ -178,6 +179,7 @@ export default function CandidatesPage() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [showBulkJD, setShowBulkJD] = useState(false);
   const [showBulkStage, setShowBulkStage] = useState(false);
+  const [pendingBulk, setPendingBulk] = useState<{ action: string; value?: string; label: string } | null>(null);
   const bulkStageRef = useRef<HTMLDivElement>(null);
   const bulkJDRef = useRef<HTMLDivElement>(null);
 
@@ -347,19 +349,34 @@ export default function CandidatesPage() {
     setShowBulkStage(false);
   };
 
-  const bulkAction = async (action: string, value?: string) => {
+  const requestBulkAction = (action: string, value?: string) => {
     if (selected.size === 0) return;
-    if (action === "delete" && !confirm(`${selected.size}${t("bulk.deleteConfirm")}`)) return;
+    const labels: Record<string, string> = {
+      delete: t("common.delete"),
+      change_status: t("bulk.changeStage"),
+      assign_jd: t("bulk.assignJD"),
+    };
+    const label = action === "change_status"
+      ? `${labels[action]} → ${STAGE_OPTIONS.find(o => o.value === value)?.labelKey ? t(STAGE_OPTIONS.find(o => o.value === value)!.labelKey) : value}`
+      : action === "assign_jd"
+      ? `${labels[action]} → ${value || t("bulk.unassigned")}`
+      : labels[action] || action;
+    setPendingBulk({ action, value, label });
+    setShowBulkJD(false);
+    setShowBulkStage(false);
+  };
+
+  const executeBulkAction = async () => {
+    if (!pendingBulk || selected.size === 0) return;
     setBulkLoading(true);
     await fetch("/api/admin/candidates/bulk", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selected), action, value }),
+      body: JSON.stringify({ ids: Array.from(selected), action: pendingBulk.action, value: pendingBulk.value }),
     });
     setBulkLoading(false);
     setSelected(new Set());
-    setShowBulkJD(false);
-    setShowBulkStage(false);
+    setPendingBulk(null);
     fetchCandidates();
   };
 
@@ -635,7 +652,7 @@ export default function CandidatesPage() {
                 <div className="absolute bottom-full left-0 mb-1.5 min-w-[180px] max-h-[280px] overflow-y-auto bg-white border border-gray-200/80 rounded-xl py-1 z-50"
                   style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
                   {STAGE_OPTIONS.map(opt => (
-                    <button key={opt.value} onClick={() => bulkAction("change_status", opt.value)}
+                    <button key={opt.value} onClick={() => requestBulkAction("change_status", opt.value)}
                       className="w-full text-left px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors">
                       {t(opt.labelKey)}
                     </button>
@@ -652,12 +669,12 @@ export default function CandidatesPage() {
               {showBulkJD && (
                 <div className="absolute bottom-full right-0 mb-1.5 min-w-[300px] max-h-[280px] overflow-y-auto bg-white border border-gray-200/80 rounded-xl py-1 z-50"
                   style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-                  <button onClick={() => bulkAction("assign_jd", "")}
+                  <button onClick={() => requestBulkAction("assign_jd", "")}
                     className="w-full text-left px-3.5 py-2 text-[13px] text-gray-400 hover:bg-gray-50 transition-colors">
                     {t("bulk.unassigned")}
                   </button>
                   {Object.entries(allJDs).map(([code, j]) => (
-                    <button key={code} onClick={() => bulkAction("assign_jd", `${code} - ${j.position}`)}
+                    <button key={code} onClick={() => requestBulkAction("assign_jd", `${code} - ${j.position}`)}
                       className="w-full text-left px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors">
                       {code} — {j.company} · {j.position}
                     </button>
@@ -666,12 +683,23 @@ export default function CandidatesPage() {
               )}
             </div>
             {/* 삭제 */}
-            <button onClick={() => bulkAction("delete")} disabled={bulkLoading}
+            <button onClick={() => requestBulkAction("delete")} disabled={bulkLoading}
               className="px-4 py-2 rounded-xl text-[13px] font-medium bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50">
               {t("common.delete")}
             </button>
           </div>
         </div>
+      )}
+
+      {pendingBulk && (
+        <ConfirmModal
+          title={`${selected.size}명 일괄 ${pendingBulk.label}`}
+          message={`선택한 ${selected.size}명에게 "${pendingBulk.label}" 작업을 실행합니다.`}
+          confirmLabel={pendingBulk.label}
+          danger={pendingBulk.action === "delete"}
+          onConfirm={executeBulkAction}
+          onCancel={() => setPendingBulk(null)}
+        />
       )}
 
       {selectedCandidate && (

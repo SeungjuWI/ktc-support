@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 interface Session {
   id: string;
@@ -101,6 +102,7 @@ export default function InterviewsAdminPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ decision: string } | null>(null);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -504,15 +506,15 @@ export default function InterviewsAdminPage() {
           </label>
           <span className="text-[13px] text-gray-500">{selected.size}{t("bulk.selected")}</span>
           <div className="flex gap-2 ml-auto">
-            <button onClick={() => bulkDecision("pass")} disabled={bulkLoading}
+            <button onClick={() => setConfirmAction({ decision: "pass" })} disabled={bulkLoading}
               className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1D9E75]/10 text-[#1D9E75] hover:bg-[#1D9E75]/20 transition-colors duration-100 disabled:opacity-50">
               PASS
             </button>
-            <button onClick={() => bulkDecision("hold")} disabled={bulkLoading}
+            <button onClick={() => setConfirmAction({ decision: "hold" })} disabled={bulkLoading}
               className="px-4 py-2 rounded-xl text-[13px] font-medium bg-grade-s-bg text-grade-s-text hover:bg-orange-100 transition-colors duration-100 disabled:opacity-50">
               HOLD
             </button>
-            <button onClick={() => bulkDecision("fail")} disabled={bulkLoading}
+            <button onClick={() => setConfirmAction({ decision: "fail" })} disabled={bulkLoading}
               className="px-4 py-2 rounded-xl text-[13px] font-medium bg-red-50 text-red-500 hover:bg-red-100 transition-colors duration-100 disabled:opacity-50">
               FAIL
             </button>
@@ -631,6 +633,17 @@ export default function InterviewsAdminPage() {
             )}
           </div>
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmModal
+          title={`${selected.size}명 ${confirmAction.decision.toUpperCase()} 처리`}
+          message={`선택한 ${selected.size}명을 ${confirmAction.decision.toUpperCase()}로 변경합니다.`}
+          confirmLabel={confirmAction.decision.toUpperCase()}
+          danger={confirmAction.decision === "fail"}
+          onConfirm={() => { bulkDecision(confirmAction.decision); setConfirmAction(null); }}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );

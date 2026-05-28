@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabaseAdmin() {
@@ -11,7 +11,6 @@ function getSupabaseAdmin() {
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
-  // ai_interview_passed 또는 final_passed 상태인 후보자 조회
   const { data: candidates } = await supabase
     .from("candidates")
     .select("*")
@@ -23,7 +22,6 @@ export async function GET() {
     return NextResponse.json({ success: true, items: [] });
   }
 
-  // talent_id → ovr_score 조회
   const talentIds = Array.from(new Set(candidates.filter((c) => c.talent_id).map((c) => c.talent_id)));
   let screeningScoreMap: Record<string, number> = {};
   if (talentIds.length > 0) {
@@ -36,7 +34,6 @@ export async function GET() {
     }
   }
 
-  // candidate_id → interview_session (최신 scored 우선)
   const candidateIds = candidates.map((c) => c.id);
   const { data: sessions } = await supabase
     .from("interview_sessions")
@@ -52,11 +49,8 @@ export async function GET() {
     }
   }
 
-  // 조합
   const items = candidates.map((c) => {
     const session = sessionMap[c.id] || null;
-
-    // screening score: talents.ovr_score 우선, candidates.llm_score fallback
     let screeningScore: number | null = null;
     if (c.talent_id && screeningScoreMap[c.talent_id] !== undefined) {
       screeningScore = screeningScoreMap[c.talent_id];
@@ -88,4 +82,45 @@ export async function GET() {
   });
 
   return NextResponse.json({ success: true, items });
+}
+
+// 인라인 편집 저장
+export async function PATCH(req: NextRequest) {
+  const { updates } = await req.json();
+  // updates: Array<{ id, candidate_name?, applied_company?, applied_position?, yoe?, cv_url?, strengths_ko?, ai_summary? }>
+
+  if (!updates || !Array.isArray(updates) || updates.length === 0) {
+    return NextResponse.json({ error: "updates required" }, { status: 400 });
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  for (const u of updates) {
+    const candidateUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (u.candidate_name !== undefined) candidateUpdate.full_name = u.candidate_name;
+    if (u.applied_company !== undefined) candidateUpdate.applied_company = u.applied_company;
+    if (u.applied_position !== undefined) candidateUpdate.applied_job = u.applied_position;
+    if (u.yoe !== undefined) candidateUpdate.yoe = u.yoe;
+    if (u.cv_url !== undefined) candidateUpdate.cv_url = u.cv_url;
+
+    if (Object.keys(candidateUpdate).length > 1) {
+      await supabase.from("candidates").update(candidateUpdate).eq("id", u.id);
+    }
+
+    // strengths_ko → llm_summary JSON 내 업데이트
+    if (u.strengths_ko !== undefined) {
+      const { data: c } = await supabase.from("candidates").select("llm_summary").eq("id", u.id).single();
+      let summary = {};
+      try { summary = c?.llm_summary ? JSON.parse(c.llm_summary) : {}; } catch { /* */ }
+      (summary as Record<string, unknown>).strengths_ko = u.strengths_ko;
+      await supabase.from("candidates").update({ llm_summary: JSON.stringify(summary) }).eq("id", u.id);
+    }
+
+    // ai_summary → interview_sessions.ai_summary
+    if (u.ai_summary !== undefined) {
+      await supabase.from("interview_sessions").update({ ai_summary: u.ai_summary }).eq("candidate_id", u.id);
+    }
+  }
+
+  return NextResponse.json({ success: true, updated: updates.length });
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import ConfirmModal from "@/app/components/ConfirmModal";
 import type { Talent } from "@/lib/types";
 import { useAdminI18n } from "@/lib/admin-i18n";
 
@@ -35,6 +36,7 @@ export default function AdminTalentsPage() {
   const [dedupResult, setDedupResult] = useState<{ removed: number; duplicateGroups: number } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<{ type: string } | null>(null);
 
   useEffect(() => {
     loadTalents();
@@ -238,13 +240,13 @@ export default function AdminTalentsPage() {
           <span className="text-[13px] font-medium text-[#3182F6]">{selectedIds.size}명 선택</span>
           <div className="flex gap-2 ml-auto">
             <button
-              onClick={bulkDeletePhotos}
+              onClick={() => setPendingConfirm({ type: "deletePhotos" })}
               className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] font-medium hover:border-gray-300 transition-colors"
             >
               프로필 사진 삭제
             </button>
             <button
-              onClick={() => { if (confirm(`선택한 ${selectedIds.size}명의 카드를 삭제합니다. 되돌릴 수 없습니다.`)) bulkDeleteTalents(); }}
+              onClick={() => setPendingConfirm({ type: "deleteTalents" })}
               className="px-4 py-2 bg-red-500 text-white rounded-xl text-[13px] font-medium hover:bg-red-600 transition-colors"
             >
               카드 삭제
@@ -364,6 +366,28 @@ export default function AdminTalentsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {pendingConfirm?.type === "deletePhotos" && (
+        <ConfirmModal
+          title={`${selectedIds.size}명 프로필 사진 삭제`}
+          message={`선택한 ${selectedIds.size}명의 프로필 사진을 삭제합니다.`}
+          confirmLabel="삭제"
+          danger
+          onConfirm={() => { setPendingConfirm(null); bulkDeletePhotos(); }}
+          onCancel={() => setPendingConfirm(null)}
+        />
+      )}
+
+      {pendingConfirm?.type === "deleteTalents" && (
+        <ConfirmModal
+          title={`${selectedIds.size}명 카드 삭제`}
+          message={`선택한 ${selectedIds.size}명의 인재 카드를 삭제합니다.\n되돌릴 수 없습니다.`}
+          confirmLabel="삭제"
+          danger
+          onConfirm={() => { setPendingConfirm(null); bulkDeleteTalents(); }}
+          onCancel={() => setPendingConfirm(null)}
+        />
       )}
     </div>
   );
