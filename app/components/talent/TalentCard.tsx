@@ -54,7 +54,7 @@ export function TalentCard({ talent, blurPhoto }: { talent: Talent; blurPhoto?: 
           ))}
         </div>
         {talent.salary_min_vnd > 0 && (
-          <span className="text-[11px] font-medium text-blue-500">
+          <span className="text-[13px] font-medium" style={{ color: "#FF5500" }}>
             {(talent.salary_min_vnd / 1000000).toFixed(0)}~{(talent.salary_max_vnd / 1000000).toFixed(0)}M
           </span>
         )}

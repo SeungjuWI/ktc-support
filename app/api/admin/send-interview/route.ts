@@ -27,9 +27,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const INTERVIEW_BASE = "https://vtm-neon.vercel.app/interview";
-const LOGO_URL = "https://vtm-neon.vercel.app/logo.png";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://vtm-neon.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://vtm.kr";
+const INTERVIEW_BASE = `${BASE_URL}/interview`;
+const LOGO_URL = `${BASE_URL}/logo.png`;
 
 function getDefaultDeadlineISO(): string {
   // 내일 오전 10시 베트남 시간 (GMT+7)

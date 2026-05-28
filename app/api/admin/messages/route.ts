@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://vtm-neon.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://vtm.kr";
 const LOGO_URL = `${BASE_URL}/logo.png`;
 
 function buildOutboundHtml(body: string, threadId: string): string {

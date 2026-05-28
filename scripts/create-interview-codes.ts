@@ -68,7 +68,7 @@ async function main() {
   console.log(`\n생성된 코드 (${codes.length}개):\n`);
   console.log(codes.join("\n"));
   console.log("\n이 코드를 지원자에게 이메일/메시지로 전달하세요.");
-  console.log(`지원자 접속 URL: https://vtm-neon.vercel.app/interview\n`);
+  console.log(`지원자 접속 URL: https://vtm.kr/interview\n`);
 }
 
 main().catch(console.error);

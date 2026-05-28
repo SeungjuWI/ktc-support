@@ -138,7 +138,7 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
         </div>
 
         {/* 카드 그리드 */}
-        <div className="relative">
+        <div className={`relative ${!authed ? "max-h-[60vh] overflow-hidden" : ""}`}>
           <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[10px] ${!authed ? "blur-[6px] select-none" : ""}`}>
             {filteredTalents.map((talent) => (
               <div

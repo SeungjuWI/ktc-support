@@ -33,6 +33,8 @@ export default function AdminTalentsPage() {
   const [search, setSearch] = useState("");
   const [dedupLoading, setDedupLoading] = useState(false);
   const [dedupResult, setDedupResult] = useState<{ removed: number; duplicateGroups: number } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState(false);
 
   useEffect(() => {
     loadTalents();
@@ -90,6 +92,52 @@ export default function AdminTalentsPage() {
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((t) => t.id)));
+    }
+  }
+
+  async function bulkDeletePhotos() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    // Storage 파일 삭제
+    const fileNames = ids.map((id) => `${id}.jpg`);
+    await supabase.storage.from("talent-photos").remove(fileNames);
+    // DB photo_url null
+    for (const id of ids) {
+      await supabase.from("talents").update({ photo_url: null }).eq("id", id);
+    }
+    setTalents((prev) =>
+      prev.map((t) => (selectedIds.has(t.id) ? { ...t, photo_url: undefined } : t))
+    );
+    setSelectedIds(new Set());
+  }
+
+  async function bulkDeleteTalents() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    // Storage 파일도 같이 삭제
+    const fileNames = ids.map((id) => `${id}.jpg`);
+    await supabase.storage.from("talent-photos").remove(fileNames);
+    for (const id of ids) {
+      await supabase.from("talents").delete().eq("id", id);
+    }
+    setTalents((prev) => prev.filter((t) => !selectedIds.has(t.id)));
+    setSelectedIds(new Set());
+  }
+
   const filtered = talents.filter((t) => {
     if (filter === "published") return t.published;
     if (filter === "draft") return !t.published;
@@ -115,6 +163,14 @@ export default function AdminTalentsPage() {
           <button onClick={unpublishAll}
             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] hover:border-gray-300 transition-colors">
             {t("talents.unpublishAll")}
+          </button>
+          <button onClick={() => { setBulkAction((v) => !v); setSelectedIds(new Set()); }}
+            className={`px-4 py-2.5 rounded-xl text-[13px] transition-colors ${
+              bulkAction
+                ? "bg-gray-900 text-white"
+                : "bg-white border border-gray-200 text-gray-700 hover:border-gray-300"
+            }`}>
+            {bulkAction ? "선택 해제" : "선택 모드"}
           </button>
           <button onClick={dedupTalents} disabled={dedupLoading}
             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] hover:border-gray-300 transition-colors disabled:opacity-50">
@@ -167,6 +223,36 @@ export default function AdminTalentsPage() {
         ))}
       </div>
 
+      {/* 하단 고정 액션 바 — 선택모드에서 1명 이상 선택 시 표시 */}
+      {bulkAction && selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-5 py-3 flex items-center gap-3">
+          <label className="flex items-center gap-2 text-[13px] text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && selectedIds.size === filtered.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded accent-[#3182F6]"
+            />
+            전체
+          </label>
+          <span className="text-[13px] font-medium text-[#3182F6]">{selectedIds.size}명 선택</span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={bulkDeletePhotos}
+              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] font-medium hover:border-gray-300 transition-colors"
+            >
+              프로필 사진 삭제
+            </button>
+            <button
+              onClick={() => { if (confirm(`선택한 ${selectedIds.size}명의 카드를 삭제합니다. 되돌릴 수 없습니다.`)) bulkDeleteTalents(); }}
+              className="px-4 py-2 bg-red-500 text-white rounded-xl text-[13px] font-medium hover:bg-red-600 transition-colors"
+            >
+              카드 삭제
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 인재 목록 */}
       {loading ? (
         <div className="text-center py-16">
@@ -187,7 +273,14 @@ export default function AdminTalentsPage() {
           {filtered.map((t) => (
             <div
               key={t.id}
-              className="bg-white border-[0.5px] border-gray-200/60 rounded-2xl p-5 relative overflow-hidden"
+              onClick={bulkAction ? () => toggleSelect(t.id) : undefined}
+              className={`rounded-2xl p-5 relative overflow-hidden transition-colors ${
+                bulkAction ? "cursor-pointer" : ""
+              } ${
+                bulkAction && selectedIds.has(t.id)
+                  ? "bg-[#E8F3FF] border-[1.5px] border-[#3182F6]"
+                  : "bg-white border-[0.5px] border-gray-200/60"
+              }`}
             >
               {!t.published && (
                 <>
@@ -229,8 +322,8 @@ export default function AdminTalentsPage() {
                 </div>
               </div>
 
-              {/* 액션 - 항상 선명하게 */}
-              <div className="flex items-center justify-end gap-2 mt-3 relative z-[2]">
+              {/* 액션 - 선택모드에서는 숨김 */}
+              {!bulkAction && <div className="flex items-center justify-end gap-2 mt-3 relative z-[2]">
                   {t.resume_url && (
                     <a
                       href={t.resume_url}
@@ -267,7 +360,7 @@ export default function AdminTalentsPage() {
                   >
                     {deleting === t.id ? "확인" : "삭제"}
                   </button>
-              </div>
+              </div>}
             </div>
           ))}
         </div>
