@@ -69,7 +69,8 @@ Important rules:
 3. If transcript is very short (1-2 words) or empty, score 1.
 4. Be objective and base your score strictly on the rubric.
 5. Watch for AI-generated answers (overly polished, generic platitudes, perfect grammar with no personal specifics, unnatural fluency). If suspected, mention it in reasoning and lean toward lower scores.
-6. Output STRICT JSON only, no markdown, no extra text.
+6. This interview has NO Korean language questions. The "Language" category tests ENGLISH proficiency. Do NOT mention Korean language ability in your reasoning.
+7. Output STRICT JSON only, no markdown, no extra text.
 
 Output format:
 {
@@ -159,7 +160,7 @@ export async function generateFinalSummary(params: {
         {
           role: "system",
           content:
-            "당신은 KTC 프로그램(베트남 인재 ↔ 한국 기업 매칭)의 채용 담당자입니다. 후보자의 면접 결과를 종합하여 한국어로 4-6문장의 종합 코멘트를 작성하세요. 강점, 약점, 추천 여부를 포함하되 객관적이고 간결하게.",
+            "당신은 KTC 프로그램(베트남 인재 ↔ 한국 기업 매칭)의 채용 담당자입니다. 후보자의 면접 결과를 종합하여 한국어로 4-6문장의 종합 코멘트를 작성하세요. 강점, 약점, 추천 여부를 포함하되 객관적이고 간결하게.\n\n중요: 이 인터뷰에는 한국어 질문이 없습니다. Q1(Language)과 Q6(Certificates)은 영어로 답변하고, 나머지는 베트남어로 답변합니다. 'Language' 카테고리는 영어 능력 평가입니다. 한국어 실력을 언급하지 마세요.",
         },
         {
           role: "user",
