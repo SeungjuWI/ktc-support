@@ -98,6 +98,9 @@ export default function InterviewsAdminPage() {
   const [rows, setRows] = useState<CandidateRow[]>([emptyRow()]);
   const [issuedResults, setIssuedResults] = useState<IssuedResult[]>([]);
   const [issueDeadline, setIssueDeadline] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -208,6 +211,40 @@ export default function InterviewsAdminPage() {
 
   const overdueCount = filtered.filter(s => isOverdue(s)).length;
 
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(s => s.id)));
+    }
+  };
+
+  const toggleBulkMode = () => {
+    setBulkMode(v => !v);
+    setSelected(new Set());
+  };
+
+  const bulkDecision = async (decision: string) => {
+    if (selected.size === 0) return;
+    setBulkLoading(true);
+    await fetch("/api/admin/interviews/bulk-decision", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selected), decision }),
+    });
+    setBulkLoading(false);
+    setSelected(new Set());
+    fetchSessions();
+  };
+
   const exportCsv = () => {
     const headers = ["코드", "이름", "스크리닝 점수", "Phone", "회사", "포지션", "상태", "데드라인", "인터뷰 점수", "등급", "결정"];
     const rows = filtered.map(s => {
@@ -251,15 +288,23 @@ export default function InterviewsAdminPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button onClick={toggleBulkMode}
+            className={`px-4 py-2 rounded-xl text-[13px] transition-colors duration-100 ${
+              bulkMode
+                ? "bg-gray-900 text-white"
+                : "bg-white border-[0.5px] border-gray-200 text-gray-700 hover:border-gray-300"
+            }`}>
+            {bulkMode ? "선택 해제" : "선택 모드"}
+          </button>
           <button onClick={exportCsv}
-            className="flex items-center gap-1.5 border-[0.5px] border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-[14px] font-medium transition-colors duration-100">
+            className="flex items-center gap-1.5 border-[0.5px] border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-[13px] font-medium transition-colors duration-100">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             CSV
           </button>
           <button onClick={() => setShowIssueModal(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-[14px] font-medium transition-colors duration-100">
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-[13px] font-medium transition-colors duration-100">
             + {t("interviews.issueCodes")}
           </button>
         </div>
@@ -352,83 +397,126 @@ export default function InterviewsAdminPage() {
       {loading ? (
         <div className="text-center py-12 text-gray-500 text-[14px]">{t("common.loading")}</div>
       ) : (
-        <div className="bg-white rounded-2xl border-[0.5px] border-gray-200/60 overflow-x-auto">
-          <table className="w-full text-[13px] whitespace-nowrap">
+        <div className={`bg-white rounded-2xl border-[0.5px] border-gray-200/60 ${bulkMode && selected.size > 0 ? "mb-16" : ""}`}>
+          <table className="w-full text-[13px] table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.code")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.name")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.screeningScore")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">Phone</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.company")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.position")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.status")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.deadline")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.score")}</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">등급</th>
-                <th className="px-4 py-3 text-left text-gray-500 font-medium">{t("interviews.col.decision")}</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[18%]">{t("interviews.col.code")} / {t("interviews.col.name")}</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[18%]">{t("interviews.col.company")} / {t("interviews.col.position")}</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[12%]">Phone</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[20%]">{t("interviews.col.status")} / {t("interviews.deadline")}</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[18%]">{t("interviews.col.screeningScore")} / {t("interviews.col.score")}</th>
+                <th className="px-4 py-3 text-left text-gray-500 font-medium w-[14%]">등급 / {t("interviews.col.decision")}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((s) => {
                 const overdue = isOverdue(s);
+                const gradeResult = calcGrade(s.screening_score, s.total_score);
+                const isSelected = selected.has(s.id);
                 return (
-                  <tr key={s.id} className={`border-t border-gray-100 hover:bg-gray-50/50 transition-colors duration-100 ${overdue ? "bg-red-50/30" : ""}`}>
-                    <td className="px-4 py-3 font-mono text-[12px]">
-                      <Link href={`/admin/interviews/${s.id}`} className="text-blue-500 hover:text-blue-600 hover:underline">{s.access_code}</Link>
+                  <tr key={s.id}
+                    onClick={bulkMode ? () => toggleSelect(s.id) : undefined}
+                    className={`border-t border-gray-100 transition-colors duration-100 ${
+                      bulkMode ? "cursor-pointer" : ""
+                    } ${
+                      bulkMode && isSelected
+                        ? "bg-[#E8F3FF] border-l-2 border-l-[#3182F6]"
+                        : overdue ? "bg-red-50/30 hover:bg-gray-50/50" : "hover:bg-gray-50/50"
+                    }`}>
+                    <td className="px-4 py-3">
+                      {bulkMode ? (
+                        <span className="font-mono text-[12px] text-blue-500">{s.access_code}</span>
+                      ) : (
+                        <Link href={`/admin/interviews/${s.id}`} className="text-blue-500 hover:text-blue-600 hover:underline font-mono text-[12px]">{s.access_code}</Link>
+                      )}
+                      <div className="text-[13px] text-gray-900 mt-0.5 truncate">{s.candidate_name || <span className="text-gray-400">—</span>}</div>
                     </td>
-                    <td className="px-4 py-3">{s.candidate_name || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-[12px]">
-                      {s.screening_score !== null && s.screening_score !== undefined ? (
-                        <span className={`font-medium ${s.screening_score >= 85 ? "text-grade-s-text" : s.screening_score >= 70 ? "text-blue-500" : "text-gray-600"}`}>{s.screening_score}</span>
-                      ) : <span className="text-gray-400">—</span>}
+                    <td className="px-4 py-3">
+                      <div className="text-[12px] text-gray-600 truncate" title={s.applied_company || undefined}>{s.applied_company || <span className="text-gray-400">—</span>}</div>
+                      <div className="text-[12px] text-gray-500 mt-0.5 truncate" title={s.applied_position || undefined}>{s.applied_position || <span className="text-gray-400">—</span>}</div>
                     </td>
                     <td className="px-4 py-3 text-[12px] text-gray-600">{s.candidate_phone || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600 max-w-[120px] truncate" title={s.applied_company || undefined}>{s.applied_company || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600 max-w-[120px] truncate" title={s.applied_position || undefined}>{s.applied_position || <span className="text-gray-400">—</span>}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className={`text-[12px] px-2 py-1 rounded-full ${statusBadge(s.status)}`}>{statusLabel(s)}</span>
                         {overdue && <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500">{t("interviews.overdue")}</span>}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-[12px]">
-                      {s.deadline ? (
-                        <span className={overdue ? "text-red-500 font-medium" : "text-gray-600"}>{formatDeadline(s.deadline)}</span>
-                      ) : <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {s.total_score !== null ? `${s.total_score}/70 (${Math.round(s.total_score/70*100)}%)` : <span className="text-gray-400">—</span>}
+                      <div className="text-[12px] mt-0.5">
+                        {s.deadline ? (
+                          <span className={overdue ? "text-red-500 font-medium" : "text-gray-500"}>{formatDeadline(s.deadline)}</span>
+                        ) : <span className="text-gray-400">—</span>}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      {(() => {
-                        const result = calcGrade(s.screening_score, s.total_score);
-                        if (!result) return <span className="text-gray-400">—</span>;
-                        return (
-                          <span className={`text-[12px] px-2 py-1 rounded-full font-medium ${gradeBadge(result.grade)}`}>
-                            {result.grade} {result.score}
+                      <div className="text-[12px]">
+                        <span className="text-gray-500">CV </span>
+                        {s.screening_score !== null && s.screening_score !== undefined ? (
+                          <span className={`font-medium ${s.screening_score >= 85 ? "text-grade-s-text" : s.screening_score >= 70 ? "text-blue-500" : "text-gray-600"}`}>{s.screening_score}</span>
+                        ) : <span className="text-gray-400">—</span>}
+                      </div>
+                      <div className="text-[12px] mt-0.5">
+                        <span className="text-gray-500">IV </span>
+                        <span className="font-medium text-gray-900">
+                          {s.total_score !== null ? `${s.total_score}/70 (${Math.round(s.total_score/70*100)}%)` : <span className="text-gray-400">—</span>}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>
+                        {gradeResult ? (
+                          <span className={`text-[12px] px-2 py-1 rounded-full font-medium ${gradeBadge(gradeResult.grade)}`}>
+                            {gradeResult.grade} {gradeResult.score}
                           </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.human_decision === "pass" && <span className="text-status-available font-medium">PASS</span>}
-                      {s.human_decision === "fail" && <span className="text-red-500 font-medium">FAIL</span>}
-                      {s.human_decision === "hold" && <span className="text-grade-s-text font-medium">HOLD</span>}
-                      {!s.human_decision && <span className="text-gray-400">—</span>}
+                        ) : <span className="text-gray-400 text-[12px]">—</span>}
+                      </div>
+                      <div className="mt-1">
+                        {s.human_decision === "pass" && <span className="text-status-available font-medium text-[12px]">PASS</span>}
+                        {s.human_decision === "fail" && <span className="text-red-500 font-medium text-[12px]">FAIL</span>}
+                        {s.human_decision === "hold" && <span className="text-grade-s-text font-medium text-[12px]">HOLD</span>}
+                        {!s.human_decision && <span className="text-gray-400 text-[12px]">—</span>}
+                      </div>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                     {search || companyFilter !== "all" ? t("interviews.noResult") : t("interviews.noData")}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 하단 고정 액션 바 — 선택모드에서 1명 이상 선택 시 표시 */}
+      {bulkMode && selected.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-5 py-3 flex items-center gap-3">
+          <label className="flex items-center gap-2 text-[13px] text-gray-700 cursor-pointer">
+            <input type="checkbox"
+              checked={selected.size === filtered.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500" />
+            전체 선택
+          </label>
+          <span className="text-[13px] text-gray-500">{selected.size}명 선택</span>
+          <div className="flex gap-2 ml-auto">
+            <button onClick={() => bulkDecision("pass")} disabled={bulkLoading}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1D9E75]/10 text-[#1D9E75] hover:bg-[#1D9E75]/20 transition-colors duration-100 disabled:opacity-50">
+              PASS
+            </button>
+            <button onClick={() => bulkDecision("hold")} disabled={bulkLoading}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium bg-grade-s-bg text-grade-s-text hover:bg-orange-100 transition-colors duration-100 disabled:opacity-50">
+              HOLD
+            </button>
+            <button onClick={() => bulkDecision("fail")} disabled={bulkLoading}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium bg-red-50 text-red-500 hover:bg-red-100 transition-colors duration-100 disabled:opacity-50">
+              FAIL
+            </button>
+          </div>
         </div>
       )}
 

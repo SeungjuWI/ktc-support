@@ -16,7 +16,7 @@ export async function GET() {
     .from("candidates")
     .select("*")
     .in("pipeline_status", ["ai_interview_passed", "final_passed"])
-    .order("applied_company", { ascending: true })
+    .order("applied_company", { ascending: true, nullsFirst: false })
     .order("updated_at", { ascending: true });
 
   if (!candidates || candidates.length === 0) {

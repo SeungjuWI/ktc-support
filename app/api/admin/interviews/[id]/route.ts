@@ -9,6 +9,38 @@ function getSupabaseAdmin() {
   );
 }
 
+// candidate_id가 없는 세션에서 email로 기존 candidate 매칭, 없으면 신규 생성
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findOrCreateCandidate(supabase: any, session: any): Promise<string | null> {
+  // 1) email로 기존 candidate 매칭
+  if (session.candidate_email) {
+    const { data: existing } = await supabase
+      .from("candidates")
+      .select("id")
+      .eq("email", session.candidate_email)
+      .maybeSingle();
+    if (existing) return existing.id;
+  }
+
+  // 2) 신규 생성
+  const { data: created, error } = await supabase
+    .from("candidates")
+    .insert({
+      full_name: session.candidate_name || "Unknown",
+      email: session.candidate_email || null,
+      phone: session.candidate_phone || null,
+      applied_company: session.applied_company || null,
+      applied_job: session.applied_position || null,
+      source: "ai_interview",
+      pipeline_status: "new",
+    })
+    .select("id")
+    .single();
+
+  if (error || !created) return null;
+  return created.id;
+}
+
 // 세션 상세 + 음성 signed URL
 export async function GET(
   _req: NextRequest,
@@ -58,23 +90,38 @@ export async function PATCH(
   // PASS/FAIL 시 candidate pipeline_status 자동 변경
   const { data: session } = await supabase
     .from("interview_sessions")
-    .select("candidate_id")
+    .select("candidate_id, candidate_name, candidate_email, candidate_phone, applied_company, applied_position")
     .eq("id", params.id)
     .single();
 
-  if (session?.candidate_id) {
-    if (decision === "pass") {
-      await supabase.from("candidates").update({
-        pipeline_status: "ai_interview_passed",
-        updated_at: new Date().toISOString(),
-      }).eq("id", session.candidate_id);
-      await updateTalentVerification(supabase, session.candidate_id, "ai_interview_passed");
-    } else if (decision === "fail") {
-      await supabase.from("candidates").update({
-        pipeline_status: "rejected",
-        rejection_reason: "AI interview rejected",
-        updated_at: new Date().toISOString(),
-      }).eq("id", session.candidate_id);
+  if (session) {
+    let candidateId = session.candidate_id;
+
+    // candidate_id가 없으면 email로 매칭 또는 신규 생성
+    if (!candidateId && (decision === "pass" || decision === "fail")) {
+      candidateId = await findOrCreateCandidate(supabase, session);
+      if (candidateId) {
+        await supabase.from("interview_sessions").update({ candidate_id: candidateId }).eq("id", params.id);
+      }
+    }
+
+    if (candidateId) {
+      if (decision === "pass") {
+        const updateData: Record<string, string> = {
+          pipeline_status: "ai_interview_passed",
+          updated_at: new Date().toISOString(),
+        };
+        if (session.applied_company) updateData.applied_company = session.applied_company;
+        if (session.applied_position) updateData.applied_job = session.applied_position;
+        await supabase.from("candidates").update(updateData).eq("id", candidateId);
+        await updateTalentVerification(supabase, candidateId, "ai_interview_passed");
+      } else if (decision === "fail") {
+        await supabase.from("candidates").update({
+          pipeline_status: "rejected",
+          rejection_reason: "AI interview rejected",
+          updated_at: new Date().toISOString(),
+        }).eq("id", candidateId);
+      }
     }
   }
 
