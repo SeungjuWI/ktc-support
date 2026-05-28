@@ -134,7 +134,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     async function checkAdmin() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = "/login"; return; }
-      const profile = await getUserProfile(session.user.id);
+      const profile = await getUserProfile(session.user.id, true);
       if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) { window.location.href = "/"; return; }
       setAuthorized(true);
       setLoading(false);

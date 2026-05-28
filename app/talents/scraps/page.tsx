@@ -21,7 +21,7 @@ export default function ScrapsPage() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.replace("/login"); return; }
-      const profile = await getUserProfile(session.user.id);
+      const profile = await getUserProfile(session.user.id, true);
       if (!profile || profile.status !== "approved") { router.replace("/login"); return; }
       setAuthed(true);
     });

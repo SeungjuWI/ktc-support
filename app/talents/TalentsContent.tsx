@@ -72,7 +72,7 @@ export default function TalentsContent({ talents }: { talents: Talent[] }) {
         setAuthed(false);
         return;
       }
-      const profile = await getUserProfile(session.user.id);
+      const profile = await getUserProfile(session.user.id, true);
       if (!profile || profile.status !== "approved") {
         setAuthed(false);
         return;
