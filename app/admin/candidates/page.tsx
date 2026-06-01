@@ -748,6 +748,9 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
   const [loadingSession, setLoadingSession] = useState(false);
   const [assigningJD, setAssigningJD] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingCV, setEditingCV] = useState(false);
+  const [cvDraft, setCvDraft] = useState(c.cv_url || "");
+  const [savingCV, setSavingCV] = useState(false);
   const summary = c.llm_summary ? JSON.parse(c.llm_summary) : null;
   const currentJobCode = c.applied_job?.match(/^([A-Z]+\d+)/)?.[1] || "";
 
@@ -963,20 +966,97 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
             </div>
           )}
 
-          <div className="flex gap-2">
-            {c.cv_url && (
-              <a href={c.cv_url} target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-700 hover:bg-gray-200 transition-colors">
-                {t("detail.viewCV")}
-              </a>
+          <div>
+            <p className="text-[11px] text-gray-500 mb-2">CV</p>
+            {editingCV ? (
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  value={cvDraft}
+                  onChange={(e) => setCvDraft(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setSavingCV(true);
+                      const newUrl = cvDraft.trim() || null;
+                      await fetch(`/api/admin/candidates/${c.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ cv_url: newUrl }),
+                      });
+                      setC((prev) => ({ ...prev, cv_url: newUrl } as Candidate));
+                      setSavingCV(false);
+                      setEditingCV(false);
+                    }}
+                    disabled={savingCV}
+                    className="flex-1 py-2 bg-[#3182F6] text-white text-[13px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50"
+                  >
+                    {savingCV ? "..." : lang === "ko" ? "저장" : lang === "vi" ? "Lưu" : "Save"}
+                  </button>
+                  <button
+                    onClick={() => { setCvDraft(c.cv_url || ""); setEditingCV(false); }}
+                    className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 text-[13px] rounded-xl hover:border-gray-300 transition-colors"
+                  >
+                    {lang === "ko" ? "취소" : lang === "vi" ? "Hủy" : "Cancel"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                {c.cv_url ? (
+                  <>
+                    <a href={c.cv_url} target="_blank" rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-700 hover:bg-gray-200 transition-colors">
+                      {t("detail.viewCV")}
+                    </a>
+                    <button
+                      onClick={() => { setCvDraft(c.cv_url || ""); setEditingCV(true); }}
+                      className="px-3 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      {lang === "ko" ? "수정" : lang === "vi" ? "Sửa" : "Edit"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(lang === "ko" ? "CV 링크를 삭제하시겠습니까?" : lang === "vi" ? "Xóa liên kết CV?" : "Delete CV link?")) return;
+                        setSavingCV(true);
+                        await fetch(`/api/admin/candidates/${c.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ cv_url: null }),
+                        });
+                        setC((prev) => ({ ...prev, cv_url: null } as Candidate));
+                        setCvDraft("");
+                        setSavingCV(false);
+                      }}
+                      disabled={savingCV}
+                      className="px-3 py-2.5 bg-red-50 rounded-xl text-[13px] text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
+                    >
+                      {lang === "ko" ? "삭제" : lang === "vi" ? "Xóa" : "Del"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setCvDraft(""); setEditingCV(true); }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#E8F3FF] rounded-xl text-[13px] text-[#3182F6] hover:bg-[#D4EAFF] transition-colors"
+                  >
+                    + {lang === "ko" ? "CV 링크 추가" : lang === "vi" ? "Thêm CV" : "Add CV link"}
+                  </button>
+                )}
+              </div>
             )}
-            {c.portfolio_url && (
+          </div>
+
+          {c.portfolio_url && (
+            <div className="flex gap-2">
               <a href={c.portfolio_url} target="_blank" rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-700 hover:bg-gray-200 transition-colors">
                 {t("detail.portfolio")}
               </a>
-            )}
-          </div>
+            </div>
+          )}
 
           {["ai_interview_sent", "ai_interview_done", "ai_interview_passed", "final_passed"].includes(c.pipeline_status) && (
             <>
