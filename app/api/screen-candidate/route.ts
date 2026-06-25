@@ -29,10 +29,9 @@ export async function POST(req: Request) {
       return Response.json({ error: "CV 링크가 없습니다." }, { status: 400 });
     }
 
-    // applied_job으로 JD 매칭
+    // applied_job으로 JD 매칭 (코드 → 직무명+회사명 순)
     const JD_MAP = await loadAllJDs(supabase as never);
-    const allCodes = Object.keys(JD_MAP);
-    const jobCode = matchJobCode(candidate.applied_job || "", allCodes);
+    const jobCode = matchJobCode(candidate.applied_job || "", JD_MAP, candidate.applied_company || "");
     if (!jobCode || !JD_MAP[jobCode]) {
       return Response.json({ error: "매칭되는 JD가 없습니다." }, { status: 400 });
     }

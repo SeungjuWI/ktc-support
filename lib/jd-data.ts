@@ -371,7 +371,26 @@ Knowledge of Software, IoT, or AI. Trilingual capabilities.`,
   },
 };
 
-export function matchJobCode(appliedJob: string, allCodes?: string[]): string | null {
+function normalizeText(s: string): string {
+  return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * applied_job → JD 코드 매칭.
+ * 매칭 순서 (신뢰도 높은 순):
+ *   1) 하드코딩 정규식 패턴
+ *   2) 코드 문자열 직접 포함 (예: "NS1602")
+ *   3) (JD 전체 맵 전달 시) 직무명 + 회사명 매칭
+ *   4) 직무명만 매칭되고 후보가 정확히 1개일 때만 채택 (모호하면 null)
+ *
+ * @param jds  코드 배열(레거시) 또는 JD 전체 맵. 맵을 주면 직무명/회사명 매칭까지 동작.
+ * @param appliedCompany  회사명(있으면 직무명 중복 시 구분에 사용)
+ */
+export function matchJobCode(
+  appliedJob: string,
+  jds?: string[] | Record<string, JobDescription>,
+  appliedCompany?: string
+): string | null {
   if (!appliedJob) return null;
 
   const codePatterns: Record<string, RegExp> = {
@@ -399,12 +418,43 @@ export function matchJobCode(appliedJob: string, allCodes?: string[]): string | 
     if (pattern.test(appliedJob)) return code;
   }
 
-  // DB에서 추가된 JD 코드 매칭 (정확한 코드 매칭)
-  if (allCodes) {
-    for (const code of allCodes) {
+  if (!jds) return null;
+
+  // 레거시: 코드 배열만 전달된 경우 → 코드 직접 포함 매칭만
+  if (Array.isArray(jds)) {
+    for (const code of jds) {
       if (appliedJob.toUpperCase().includes(code.toUpperCase())) return code;
     }
+    return null;
   }
+
+  // JD 전체 맵 전달 → 코드 → 직무명+회사명 순으로 매칭
+  const codes = Object.keys(jds);
+
+  // 2) 코드 문자열 직접 포함
+  for (const code of codes) {
+    if (appliedJob.toUpperCase().includes(code.toUpperCase())) return code;
+  }
+
+  // 3~4) 직무명/회사명 매칭
+  const jobN = normalizeText(appliedJob);
+  const compN = appliedCompany ? normalizeText(appliedCompany) : jobN;
+  const posOnlyMatches: string[] = [];
+
+  for (const code of codes) {
+    const jd = jds[code];
+    const posN = normalizeText(jd.position);
+    const cmpN = normalizeText(jd.company);
+    const posHit = posN.length >= 4 && (jobN.includes(posN) || posN.includes(jobN));
+    const compHit =
+      cmpN.length >= 2 &&
+      (compN.includes(cmpN) || cmpN.includes(compN) || jobN.includes(cmpN));
+    if (posHit && compHit) return code; // 직무 + 회사 둘 다 → 확정
+    if (posHit) posOnlyMatches.push(code);
+  }
+
+  // 직무명만 매칭됐고 후보가 정확히 1개면 채택 (여러 개면 모호 → 포기)
+  if (posOnlyMatches.length === 1) return posOnlyMatches[0];
 
   return null;
 }
@@ -420,7 +470,7 @@ export function resolveJD(
   allJDs: Record<string, JobDescription>
 ): { code: string; company: string; position: string } | null {
   if (!appliedJob) return null;
-  const code = matchJobCode(appliedJob, Object.keys(allJDs));
+  const code = matchJobCode(appliedJob, allJDs);
   if (!code || !allJDs[code]) return null;
   return { code, company: allJDs[code].company, position: allJDs[code].position };
 }

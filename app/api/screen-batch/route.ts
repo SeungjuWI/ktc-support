@@ -21,7 +21,6 @@ export async function POST() {
       try {
         const supabase = getSupabaseAdmin();
         const JD_MAP = await loadAllJDs(supabase as never);
-        const allCodes = Object.keys(JD_MAP);
 
         // JD 매칭 가능하고, CV 있고, 아직 스크리닝 안 된 후보자만
         const { data: candidates } = await supabase
@@ -38,7 +37,7 @@ export async function POST() {
         }
 
         const matchable = candidates.filter((c) => {
-          const code = matchJobCode(c.applied_job || "", allCodes);
+          const code = matchJobCode(c.applied_job || "", JD_MAP, c.applied_company || "");
           return code && JD_MAP[code];
         });
 
@@ -60,7 +59,7 @@ export async function POST() {
 
         // 한 명을 스크리닝하는 함수
         const processOne = async (c: (typeof matchable)[0]) => {
-          const jobCode = matchJobCode(c.applied_job || "", allCodes)!;
+          const jobCode = matchJobCode(c.applied_job || "", JD_MAP, c.applied_company || "")!;
           const jd = JD_MAP[jobCode];
           const jdText = buildJDText(jd);
 

@@ -88,6 +88,20 @@ const COLUMN_MAPS: Record<string, ColumnMap> = {
     Status: "_status",
     ID: "_id",
   },
+  // jobs-go: 인턴/신입 무료 수집 플랫폼. 헤더 베트남어. (같은 스프레드시트의 새 탭)
+  "jobs-go": {
+    "Họ tên": "full_name",
+    Email: "email",
+    "Số điện thoại": "phone",
+    "Địa chỉ": "city",
+    "Học vấn": "university",
+    "Thời gian": "applied_date",
+    "Link CV": "cv_url",
+    "Applied Job": "position", // 직무 포지션명
+    "Job ID": "applied_job", // JD 코드 (matchJobCode 매칭용)
+    "Applied Company": "applied_company",
+    "Trạng thái": "_status",
+  },
   // glint, LinkedIn, YBOX 는 동일한 형식
   _default: {
     "Full Name": "full_name",
@@ -124,6 +138,25 @@ export async function getSheetTabs(): Promise<string[]> {
   );
 }
 
+// 셀의 표시 텍스트가 아닌 "하이퍼링크 URL"을 [행][열] 2차원으로 추출.
+// (예: "Xem CV ứng viên" 처럼 링크 라벨만 보이고 실제 URL은 하이퍼링크에 숨은 경우)
+async function fetchHyperlinks(
+  sheets: ReturnType<typeof google.sheets>,
+  sheetName: string
+): Promise<string[][]> {
+  try {
+    const res = await sheets.spreadsheets.get({
+      spreadsheetId: SHEET_ID,
+      ranges: [`'${sheetName}'!A1:Z`],
+      fields: "sheets(data(rowData(values(hyperlink))))",
+    });
+    const rowData = res.data.sheets?.[0]?.data?.[0]?.rowData || [];
+    return rowData.map((r) => (r.values || []).map((c) => c.hyperlink || ""));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchSheetData(
   sheetName: string
 ): Promise<RawCandidate[]> {
@@ -137,6 +170,9 @@ export async function fetchSheetData(
 
   const rows = res.data.values;
   if (!rows || rows.length < 2) return [];
+
+  // 하이퍼링크 URL 맵 (cv_url / portfolio_url 가 링크 라벨일 때 실제 URL 복구용)
+  const hyperlinks = await fetchHyperlinks(sheets, sheetName);
 
   const headers = rows[0];
   const columnMap = getColumnMap(sheetName);
@@ -155,6 +191,14 @@ export async function fetchSheetData(
     const get = (field: string) => {
       const idx = fieldIndexMap[field];
       return idx !== undefined ? (row[idx] || "").trim() : "";
+    };
+    // URL 필드는 표시 텍스트가 http로 시작 안 하면 하이퍼링크 URL을 우선 사용
+    const getUrl = (field: string) => {
+      const text = get(field);
+      if (/^https?:\/\//i.test(text)) return text;
+      const idx = fieldIndexMap[field];
+      const link = idx !== undefined ? hyperlinks[i]?.[idx] : "";
+      return link || text;
     };
 
     const fullName = get("full_name");
@@ -180,8 +224,8 @@ export async function fetchSheetData(
       graduation_year: get("graduation_year"),
       position: get("position") || get("applied_job"),
       yoe: get("yoe"),
-      cv_url: get("cv_url"),
-      portfolio_url: get("portfolio_url"),
+      cv_url: getUrl("cv_url"),
+      portfolio_url: getUrl("portfolio_url"),
       skills: get("skills"),
       source: get("source") || sheetName,
       applied_date: get("applied_date"),
