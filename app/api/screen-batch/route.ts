@@ -82,6 +82,11 @@ export async function POST() {
                 .update({
                   llm_score: result.score,
                   llm_summary: JSON.stringify({
+                    rank: result.rank,
+                    why: result.why,
+                    matched_requirements: result.matched_requirements,
+                    missing_unclear: result.missing_unclear,
+                    preferred_met: result.preferred_met,
                     yoe_check: result.yoe_check,
                     verdict: result.verdict,
                     strengths_en: result.strengths_en,
@@ -104,7 +109,7 @@ export async function POST() {
                   pipeline_status: result.verdict === "PASS" ? "passed" : "rejected",
                   rejection_reason:
                     result.verdict === "FAIL"
-                      ? `LLM screening failed (${result.score}/100): ${result.gaps_en.join(", ")}`
+                      ? `RANK 탈락: ${result.missing_unclear.join(", ") || result.gaps_en.join(", ")}`
                       : null,
                   updated_at: new Date().toISOString(),
                 })
@@ -124,6 +129,7 @@ export async function POST() {
                 total,
                 name: c.full_name,
                 score: result.score,
+                rank: result.rank,
                 verdict: result.verdict,
                 progress: Math.round((completed / total) * 100),
               });
