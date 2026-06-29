@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
               </tr>
             </table>
             <div style="margin-top: 24px; text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://vtm.kr"}/admin/roles"
+              <a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://ktc-support.vercel.app"}/admin/roles"
                  style="display: inline-block; background: #3182F6; color: white; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-size: 14px;">
                 승인 페이지로 이동
               </a>
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
               ` : ""}
             </table>
             <div style="margin-top: 24px; text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://vtm.kr"}/admin/inquiries"
+              <a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://ktc-support.vercel.app"}/admin/inquiries"
                  style="display: inline-block; background: #3182F6; color: white; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-size: 14px;">
                 문의 관리 페이지로 이동
               </a>
