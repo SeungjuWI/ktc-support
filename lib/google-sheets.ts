@@ -102,6 +102,19 @@ const COLUMN_MAPS: Record<string, ColumnMap> = {
     "Applied Company": "applied_company",
     "Trạng thái": "_status",
   },
+  // top-cv: 신규 채용 플랫폼. 헤더 베트남어(앰퍼샌드 없는 "Họ Tên"), CV는 Link xem CV 열.
+  "top-cv": {
+    "Họ Tên": "full_name",
+    Email: "email",
+    "Số điện thoại": "phone",
+    "Địa chỉ": "city",
+    "Link xem CV": "cv_url",
+    "Ngày tiếp nhận": "applied_date",
+    "Applied Job": "position", // 직무 포지션명
+    "Job ID": "applied_job", // JD 코드 (matchJobCode 매칭용, 예: CS2203)
+    "Applied Company": "applied_company",
+    "Trạng thái": "_status",
+  },
   // glint, LinkedIn, YBOX 는 동일한 형식
   _default: {
     "Full Name": "full_name",
