@@ -115,6 +115,20 @@ const COLUMN_MAPS: Record<string, ColumnMap> = {
     "Applied Company": "applied_company",
     "Trạng thái": "_status",
   },
+  // Vieclam24h: 베트남 채용 플랫폼. 헤더 베트남어. email/phone 없음(이름으로 dedup).
+  // CV는 "Link" 열(구글드라이브). Applied Job/Job ID/Applied Company 는 top-cv 패턴과 동일.
+  Vieclam24h: {
+    Tên: "full_name",
+    "Kinh nghiệm": "yoe",
+    "Trình độ học vấn": "university",
+    "Địa chỉ làm việc mong muốn": "city",
+    "Ngày ứng tuyển": "applied_date",
+    Link: "cv_url",
+    "Applied Job": "position", // 직무 포지션명
+    "Job ID": "applied_job", // JD 코드 (matchJobCode 매칭용, 예: SMG3101)
+    "Applied Company": "applied_company",
+    "Trạng thái": "_status",
+  },
   // glint, LinkedIn, YBOX 는 동일한 형식
   _default: {
     "Full Name": "full_name",
