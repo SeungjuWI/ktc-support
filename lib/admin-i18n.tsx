@@ -152,6 +152,8 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "detail.rejectionReason": { ko: "불합격 사유", en: "Rejection Reason", vi: "Lý do không đạt" },
   "detail.viewCV": { ko: "CV 보기", en: "View CV", vi: "Xem CV" },
   "detail.portfolio": { ko: "포트폴리오", en: "Portfolio", vi: "Portfolio" },
+  "detail.cloneScreen": { ko: "다른 JD로 스크리닝", en: "Screen for another JD", vi: "Sàng lọc cho JD khác" },
+  "detail.cloneScreenRun": { ko: "복제 + 스크리닝", en: "Clone + Screen", vi: "Nhân bản + sàng lọc" },
   "detail.memo": { ko: "메모", en: "Memo", vi: "Ghi chú" },
   "detail.memoPlaceholder": { ko: "메모...", en: "Notes...", vi: "Ghi chú..." },
 

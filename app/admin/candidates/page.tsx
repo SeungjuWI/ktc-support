@@ -452,40 +452,32 @@ export default function CandidatesPage() {
 
       {/* 파이프라인 로드맵 */}
       <div className="bg-white rounded-2xl border border-gray-200/60 p-5 mb-5">
-        <div className="flex items-center">
-          {PIPELINE_STEPS.map((step, i) => {
+        <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+          {PIPELINE_STEPS.map((step) => {
             const isActive = activeTab === step.key;
             const count = counts[step.key as keyof typeof counts];
             return (
-              <React.Fragment key={step.key}>
-                <button
-                  onClick={() => setActiveTab(step.key)}
-                  className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl transition-colors flex-1 min-w-0 ${
-                    isActive ? "" : "hover:bg-gray-50/50"
-                  }`}
-                  style={isActive ? { backgroundColor: step.color + "0C" } : undefined}
+              <button
+                key={step.key}
+                onClick={() => setActiveTab(step.key)}
+                className={`rounded-xl border px-3.5 py-3 text-left transition-colors min-w-0 ${
+                  isActive ? "" : "bg-white border-gray-200 hover:border-gray-300"
+                }`}
+                style={isActive ? { borderColor: step.color, backgroundColor: step.color + "0D" } : undefined}
+              >
+                <p
+                  className={`text-[12px] mb-1 truncate ${isActive ? "font-medium" : ""}`}
+                  style={{ color: isActive ? step.color : "#6B7684" }}
                 >
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[15px] font-medium text-white"
-                    style={{ backgroundColor: isActive ? step.color : step.color + "60" }}
-                  >
-                    {count}
-                  </div>
-                  <span
-                    className={`text-[11px] leading-tight text-center truncate w-full ${isActive ? "font-medium" : ""}`}
-                    style={{ color: isActive ? step.color : "#6B7684" }}
-                  >
-                    {t(step.labelKey)}
-                  </span>
-                </button>
-                {i < PIPELINE_STEPS.length - 1 && (
-                  <div className="flex-shrink-0 text-gray-200">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </div>
-                )}
-              </React.Fragment>
+                  {t(step.labelKey)}
+                </p>
+                <p
+                  className="text-[20px] font-medium leading-none tabular-nums"
+                  style={{ color: isActive ? step.color : "#191F28" }}
+                >
+                  {count.toLocaleString()}
+                </p>
+              </button>
             );
           })}
         </div>
@@ -909,7 +901,43 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap, onPrev
   const [savingCV, setSavingCV] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [cloneJD, setCloneJD] = useState("");
+  const [cloning, setCloning] = useState(false);
+  const [cloneResult, setCloneResult] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // 같은 후보를 다른 JD 행으로 복제 후 바로 스크리닝
+  const cloneAndScreen = async () => {
+    if (!cloneJD) return;
+    setCloning(true);
+    setCloneResult(lang === "ko" ? "복제 중..." : "Cloning...");
+    try {
+      const res = await fetch("/api/admin/candidates/clone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId: c.id, jdCode: cloneJD }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "clone failed");
+      if (json.existed) {
+        setCloneResult(lang === "ko" ? `이미 ${cloneJD} 지원 행이 있습니다` : `Row for ${cloneJD} already exists`);
+        setCloning(false);
+        return;
+      }
+      setCloneResult(lang === "ko" ? "스크리닝 중..." : "Screening...");
+      const r2 = await fetch("/api/screen-candidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId: json.id }),
+      });
+      const j2 = await r2.json();
+      if (!r2.ok) throw new Error(j2.error || "screening failed");
+      setCloneResult(`${cloneJD}: ${j2.score ?? "?"}${j2.verdict ? ` · ${j2.verdict}` : ""} ✓`);
+    } catch (e) {
+      setCloneResult(`${lang === "ko" ? "실패" : "Failed"}: ${e instanceof Error ? e.message : "error"}`);
+    }
+    setCloning(false);
+  };
 
   // 고급 토글 펼치면 패널을 맨 아래까지 부드럽게 스크롤 (삭제 버튼까지 다 보이게)
   useEffect(() => {
@@ -934,6 +962,7 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap, onPrev
     setMemo(initCandidate.phone_interview_note || "");
     setCvDraft(initCandidate.cv_url || "");
     setEditingCV(false);
+    setCloneResult("");
   }, [initCandidate]);
 
   // 키보드: ← → 후보 이동, Esc 닫기
@@ -1165,6 +1194,21 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap, onPrev
           <div>
             <p className="text-[11px] text-gray-500 mb-2">{t("bulk.assignJD")}</p>
             <JDDropdown value={currentJobCode} onChange={assignJD} disabled={assigningJD} jdMap={jdMap} />
+          </div>
+
+          {/* 멀티 지원: 다른 JD로 복제 스크리닝 */}
+          <div>
+            <p className="text-[11px] text-gray-500 mb-2">{t("detail.cloneScreen")}</p>
+            <div className="flex gap-2 items-center">
+              <div className="flex-1 min-w-0">
+                <JDDropdown value={cloneJD} onChange={setCloneJD} disabled={cloning} jdMap={jdMap} />
+              </div>
+              <button onClick={cloneAndScreen} disabled={!cloneJD || cloneJD === currentJobCode || cloning}
+                className="px-4 py-2.5 bg-gray-900 text-white text-[13px] rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-40 whitespace-nowrap flex-shrink-0">
+                {cloning ? "..." : t("detail.cloneScreenRun")}
+              </button>
+            </div>
+            {cloneResult && <p className="text-[12px] text-gray-600 mt-2">{cloneResult}</p>}
           </div>
 
           {/* 메모 */}

@@ -33,14 +33,14 @@ export async function POST() {
 
         // 기존 후보자의 식별자 + pipeline_status 조회 (1000행 제한 우회)
         send({ type: "status", message: "기존 후보자 조회 중..." });
-        const existingAll: { full_name: string; email: string | null; phone: string | null; sheet_row_identifier: string; pipeline_status: string }[] = [];
+        const existingAll: { full_name: string; email: string | null; phone: string | null; sheet_row_identifier: string; pipeline_status: string; applied_job: string | null; applied_company: string | null }[] = [];
         {
           const PAGE = 1000;
           let from = 0;
           while (true) {
             const { data } = await supabase
               .from("candidates")
-              .select("full_name, email, phone, sheet_row_identifier, pipeline_status")
+              .select("full_name, email, phone, sheet_row_identifier, pipeline_status, applied_job, applied_company")
               .range(from, from + PAGE - 1);
             if (!data || data.length === 0) break;
             existingAll.push(...data);
@@ -59,13 +59,19 @@ export async function POST() {
             existingMap.set(key, status);
           }
         };
+        // 같은 사람이라도 다른 공고(JD) 지원이면 별도 행으로 받기 위해 사람 키에 공고 키를 붙임
+        const jobKey = (aj?: string | null, ac?: string | null) => {
+          const m = (aj || "").match(/[A-Z]{2,}\d{2,}/);
+          if (m) return m[0];
+          return `${(aj || "").trim().toLowerCase()}|${(ac || "").trim().toLowerCase()}`;
+        };
         existingAll.forEach((e) => {
           // 1차: sheet_row_identifier
           setMap(e.sheet_row_identifier, e.pipeline_status);
-          // 2차: 이메일 (identifier가 바뀌어도 이메일로 매칭)
-          if (e.email) setMap(e.email, e.pipeline_status);
-          // 3차: 이름+전화번호 (이메일 없는 경우 대비)
-          if (e.full_name && e.phone) setMap(`${e.full_name}-${e.phone}`, e.pipeline_status);
+          // 2차: 이메일+공고 (identifier가 바뀌어도 매칭, 다른 공고 지원은 새 행)
+          if (e.email) setMap(`${e.email}::${jobKey(e.applied_job, e.applied_company)}`, e.pipeline_status);
+          // 3차: 이름+전화번호+공고 (이메일 없는 경우 대비)
+          if (e.full_name && e.phone) setMap(`${e.full_name}-${e.phone}::${jobKey(e.applied_job, e.applied_company)}`, e.pipeline_status);
         });
 
         // 이번 동기화에서도 같은 row_identifier 중복 방지
@@ -86,9 +92,10 @@ export async function POST() {
             if (seenInBatch.has(rowId)) { skipped++; continue; }
             seenInBatch.add(rowId);
             // 다중 키로 기존 후보자 매칭: identifier → 이메일 → 이름+전화번호
+            const cJobKey = jobKey(c.applied_job, c.applied_company);
             const existingStatus = existingMap.get(rowId)
-              ?? (c.email ? existingMap.get(c.email) : undefined)
-              ?? (c.full_name && c.phone ? existingMap.get(`${c.full_name}-${c.phone}`) : undefined);
+              ?? (c.email ? existingMap.get(`${c.email}::${cJobKey}`) : undefined)
+              ?? (c.full_name && c.phone ? existingMap.get(`${c.full_name}-${c.phone}::${cJobKey}`) : undefined);
             const row = {
               full_name: c.full_name,
               email: c.email || null,
