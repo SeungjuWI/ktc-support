@@ -15,7 +15,7 @@ export async function GET() {
   const { data: candidates } = await supabase
     .from("candidates")
     .select("*")
-    .in("pipeline_status", ["ai_interview_passed", "final_passed"])
+    .in("pipeline_status", ["ai_interview_passed", "sent_to_company", "interviewing", "final_passed"])
     .order("applied_company", { ascending: true, nullsFirst: false })
     .order("updated_at", { ascending: true });
 

@@ -12,11 +12,10 @@ const NAV_KEYS = [
   { href: "/admin", labelKey: "nav.users", icon: "users", group: "internal" },
   { href: "/admin/roles", labelKey: "nav.roles", icon: "roles", group: "internal" },
   // KTC 채용 업무
+  { href: "/admin/dashboard", labelKey: "nav.dashboard", icon: "dashboard", group: "ktc" },
   { href: "/admin/jd", labelKey: "nav.jd", icon: "jd", group: "ktc" },
   { href: "/admin/candidates", labelKey: "nav.candidates", icon: "candidates", group: "ktc" },
   { href: "/admin/pool", labelKey: "nav.pool", icon: "pool", group: "ktc" },
-  { href: "/admin/interviews", labelKey: "nav.interviews", icon: "interviews", group: "ktc" },
-  { href: "/admin/messages", labelKey: "nav.messages", icon: "messages", group: "ktc" },
   { href: "/admin/delivery", labelKey: "nav.delivery", icon: "delivery", group: "ktc" },
   // KTC Support 인재 열람
   { href: "/admin/talents", labelKey: "nav.talents", icon: "talents", group: "vtm" },
@@ -59,13 +58,13 @@ function NavIcon({ type }: { type: string }) {
       </svg>
     );
   }
-  if (type === "interviews") {
+  if (type === "dashboard") {
     return (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-        <path d="M19 10v2a7 7 0 01-14 0v-2" />
-        <line x1="12" y1="19" x2="12" y2="23" />
-        <line x1="8" y1="23" x2="16" y2="23" />
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
       </svg>
     );
   }
@@ -75,14 +74,6 @@ function NavIcon({ type }: { type: string }) {
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
         <line x1="8" y1="21" x2="16" y2="21" />
         <line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    );
-  }
-  if (type === "messages") {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-        <polyline points="22,6 12,13 2,6" />
       </svg>
     );
   }
@@ -176,7 +167,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#F7F8FA]">
       {/* 헤더 */}
       <header className="bg-white sticky top-0 z-10">
-        <div className="mx-auto max-w-[1080px] px-5 h-[56px] flex items-center justify-between">
+        <div className="mx-auto max-w-[1720px] px-6 h-[56px] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
               <img src="/logo.png" alt="KTC Support" width={24} height={24} className="rounded-[4px]" />
@@ -199,7 +190,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="h-[0.5px] bg-gray-200/80" />
       </header>
 
-      <div className="mx-auto max-w-[1080px] px-5 py-6 flex gap-6">
+      <div className="mx-auto max-w-[1720px] px-6 py-6 flex gap-6">
         {/* 사이드바 */}
         <nav className="w-[200px] flex-shrink-0 hidden md:block">
           <div className="flex flex-col gap-0.5">

@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google-cloud/text-to-speech": "^6.4.1",
     "@supabase/supabase-js": "^2.105.4",
     "dotenv": "^17.4.2",
     "googleapis": "^171.4.0",

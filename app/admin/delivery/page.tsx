@@ -162,10 +162,10 @@ export default function DeliveryPage() {
         onClick={bulkMode ? () => toggleSelect(item.id) : undefined}
         className={`border-t transition-colors duration-100 ${isNewCompany && idx > 0 ? "border-t-2 border-gray-300" : "border-gray-100"} ${bulkMode ? "cursor-pointer" : ""} ${bulkMode && isSelected ? "bg-[#E8F3FF] border-l-2 border-l-[#3182F6]" : "hover:bg-gray-50/50"}`}>
         <td className="px-3 py-3 text-gray-400 text-[12px]">{item.seqNo}</td>
-        <td className="px-3 py-3 text-[12px] text-gray-700 max-w-[120px] truncate" title={item.applied_company}>{item.applied_company || "—"}</td>
+        <td className="px-3 py-3 text-[12px] text-gray-700 max-w-[200px] truncate" title={item.applied_company}>{item.applied_company || "—"}</td>
         <td className="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">{item.candidate_name || "—"}</td>
         <td className="px-3 py-3 text-[12px] text-gray-600 whitespace-nowrap">{item.yoe || "—"}</td>
-        <td className="px-3 py-3 text-[12px] text-gray-600 max-w-[140px] truncate" title={item.applied_position}>{item.applied_position || "—"}</td>
+        <td className="px-3 py-3 text-[12px] text-gray-600 max-w-[240px] truncate" title={item.applied_position}>{item.applied_position || "—"}</td>
         <td className="px-3 py-3 text-center">
           {item.screening_score !== null ? (
             <span className={`text-[13px] font-medium px-2 py-1 rounded-full ${item.screening_score >= 85 ? "bg-grade-s-bg text-grade-s-text" : item.screening_score >= 70 ? "bg-blue-50 text-blue-500" : "bg-gray-100 text-gray-600"}`}>

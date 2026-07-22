@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
   const { data: candidates } = await supabase
     .from("candidates")
     .select("*")
-    .in("pipeline_status", ["ai_interview_passed", "final_passed"])
+    .in("pipeline_status", ["ai_interview_passed", "sent_to_company", "interviewing", "final_passed"])
     .order("updated_at", { ascending: false });
 
   if (!candidates || candidates.length === 0) {

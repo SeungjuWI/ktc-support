@@ -367,8 +367,8 @@ function pipelineStatusColor(status: string): string {
   const map: Record<string, string> = {
     new: "#8B95A1",
     passed: "#3182F6",
-    ai_interview_sent: "#E8590C",
-    ai_interview_done: "#6B7684",
+    sent_to_company: "#E8590C",
+    interviewing: "#6B7684",
     final_passed: "#1D9E75",
     rejected: "#B0B8C1",
     screening_failed: "#B0B8C1",

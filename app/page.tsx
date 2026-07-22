@@ -510,12 +510,6 @@ export default function LandingPage() {
             <p>주소: 서울 종로구 종로3길17, 광화문D타워 D1동 16층, 17층</p>
             <p>전화번호: 02-6203-3222 · ktc@likelion.net</p>
           </div>
-          <div className="mt-4 mb-2">
-            <Link href="/interview" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 border-[0.5px] border-gray-200 rounded-full px-3 py-1 transition-colors duration-100">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
-              AI Interview (For Candidates)
-            </Link>
-          </div>
           <p className="text-[11px] text-gray-400 mt-2">Copyright © 2022 멋쟁이사자처럼 All rights reserved.</p>
         </div>
       </footer>
