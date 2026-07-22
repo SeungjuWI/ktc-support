@@ -83,7 +83,7 @@ function derivePipelineStatus(
   if (phoneScore === null) return "passed";
 
   // 폰인터뷰 합격 (>=36) → ai_interview_passed로 매핑
-  if (phoneScore >= 36) return "ai_interview_passed";
+  if (phoneScore >= 36) return "passed";
 
   // 폰인터뷰 불합격
   return "rejected";

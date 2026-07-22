@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -24,6 +25,7 @@ export async function GET() {
       .from("candidates")
       .select("*")
       .order("created_at", { ascending: false })
+      .order("id")
       .range(from, from + PAGE - 1);
 
     if (error) {

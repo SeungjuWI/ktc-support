@@ -4,6 +4,7 @@ import { loadAllJDs, matchJobCode } from "@/lib/jd-data";
 import { readQualifiedRows, updateQualifiedStatus } from "@/lib/qualified-sheets";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       .from("candidates")
       .select("id, full_name, applied_job, pipeline_status")
       .not("pipeline_status", "in", "(final_passed,rejected,screening_failed)")
+      .order("id")
       .range(from, from + 999);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data || data.length === 0) break;
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     const rows = await readQualifiedRows();
     sheetTargets = rows
       .filter((r) => matchJobCode(r.position, allJDs) === jdCode)
-      .filter((r) => !["passed", "rejected", "closed"].includes(r.status.toLowerCase()))
+      .filter((r) => !["passed", "rejected", "closed", "not selected", "offer"].includes(r.status.trim().toLowerCase()))
       .map((r) => ({ tab: r.tab, rowIndex: r.rowIndex, name: r.name, status: r.status }));
   } catch {
     // 시트 읽기 실패 시 DB만 처리

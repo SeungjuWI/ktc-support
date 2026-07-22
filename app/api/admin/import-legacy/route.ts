@@ -31,7 +31,7 @@ function derivePipelineStatus(
   if (cvScore === null) return "new";
   if (cvScore < 70) return "screening_failed";
   if (phoneScore === null) return "passed";
-  if (phoneScore >= 36) return "ai_interview_passed";
+  if (phoneScore >= 36) return "passed";
   return "rejected";
 }
 

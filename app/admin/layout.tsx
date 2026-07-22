@@ -164,7 +164,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   if (!authorized) return null;
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="admin-root min-h-screen bg-[#F7F8FA]">
       {/* 헤더 */}
       <header className="bg-white sticky top-0 z-10">
         <div className="mx-auto max-w-[1720px] px-6 h-[56px] flex items-center justify-between">

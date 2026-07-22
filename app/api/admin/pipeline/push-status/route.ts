@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { loadAllJDs, resolveJD } from "@/lib/jd-data";
 import {
   readQualifiedRows,
   findQualifiedRow,
   updateQualifiedStatus,
+  findTabForCompany,
+  appendQualifiedRow,
   PIPELINE_TO_SHEET_STATUS,
 } from "@/lib/qualified-sheets";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -16,7 +20,8 @@ function getSupabaseAdmin() {
   );
 }
 
-// 앱에서 후보자 상태 변경 시 Qualified Candidates 시트에도 반영
+// 앱에서 후보자 상태 변경 시 Qualified Candidates 시트에도 반영.
+// 기존 행이 있으면 Status 업데이트, 없으면 (기업 발송 시) 해당 기업 탭에 행 자동 추가.
 export async function POST(req: NextRequest) {
   const { candidateId } = await req.json();
   if (!candidateId) {
@@ -26,7 +31,7 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { data: candidate } = await supabase
     .from("candidates")
-    .select("full_name, email, pipeline_status")
+    .select("full_name, email, yoe, cv_url, llm_score, applied_job, applied_company, pipeline_status")
     .eq("id", candidateId)
     .single();
 
@@ -43,11 +48,40 @@ export async function POST(req: NextRequest) {
   try {
     const rows = await readQualifiedRows();
     const row = findQualifiedRow(rows, candidate.email, candidate.full_name);
-    if (!row) {
+
+    if (row) {
+      await updateQualifiedStatus(row.tab, row.rowIndex, sheetStatus);
+      return NextResponse.json({ success: true, updated: true, tab: row.tab, row: row.rowIndex, status: sheetStatus });
+    }
+
+    // 행이 없음 → 발송 대기/기업 발송 시에만 새 행 자동 추가 (탈락 등은 행 생성 안 함)
+    if (!["ready_to_forward", "sent_to_company"].includes(candidate.pipeline_status)) {
       return NextResponse.json({ success: true, updated: false, reason: "not found in sheet" });
     }
-    await updateQualifiedStatus(row.tab, row.rowIndex, sheetStatus);
-    return NextResponse.json({ success: true, updated: true, tab: row.tab, row: row.rowIndex, status: sheetStatus });
+
+    const allJDs = await loadAllJDs(supabase);
+    const jd = resolveJD(candidate.applied_job, allJDs);
+    const company = jd?.company || candidate.applied_company || "";
+    const tab = await findTabForCompany(company);
+    if (!tab) {
+      return NextResponse.json({
+        success: true,
+        updated: false,
+        reason: `no matching tab for company "${company || "(unknown)"}"`,
+      });
+    }
+
+    await appendQualifiedRow(tab, {
+      company,
+      name: candidate.full_name,
+      email: candidate.email || "",
+      yoe: candidate.yoe || "",
+      position: candidate.applied_job || jd?.position || "",
+      matchScore: candidate.llm_score != null ? String(candidate.llm_score) : "",
+      cvUrl: candidate.cv_url || "",
+      status: sheetStatus,
+    });
+    return NextResponse.json({ success: true, updated: true, appended: true, tab, status: sheetStatus });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "sheet update failed" }, { status: 500 });
   }

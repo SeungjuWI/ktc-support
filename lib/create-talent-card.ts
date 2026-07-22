@@ -128,10 +128,10 @@ export async function updateTalentVerification(
   if (!candidate?.talent_id) return;
 
   const chips: string[] = [];
-  if (["passed", "sent_to_company", "interviewing", "final_passed", "ai_interview_sent", "ai_interview_done", "ai_interview_passed"].includes(newStatus)) {
+  if (["passed", "ready_to_forward", "sent_to_company", "interviewing", "offer", "final_passed"].includes(newStatus)) {
     chips.push("서류 합격");
   }
-  if (["final_passed", "ai_interview_done", "ai_interview_passed"].includes(newStatus)) {
+  if (["offer", "final_passed"].includes(newStatus)) {
     chips.push("인터뷰 합격");
   }
 

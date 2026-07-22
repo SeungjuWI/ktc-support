@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readEmployees, normalizeName } from "@/lib/qualified-sheets";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from("candidates")
       .select("id, full_name, email, pipeline_status")
+      .order("id")
       .range(from, from + 999);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data || data.length === 0) break;

@@ -90,9 +90,11 @@ interface Candidate {
 
 const PIPELINE_STEPS = [
   { key: "pending", labelKey: "candidates.tab.pending", statuses: ["new"], color: "#8B95A1" },
-  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed", "ai_interview_sent", "ai_interview_done", "ai_interview_passed"], color: "#3182F6" },
+  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed"], color: "#3182F6" },
+  { key: "ready_to_forward", labelKey: "candidates.tab.readyToForward", statuses: ["ready_to_forward"], color: "#2272EB" },
   { key: "sent_to_company", labelKey: "candidates.tab.sentToCompany", statuses: ["sent_to_company"], color: "#E8590C" },
   { key: "interviewing", labelKey: "candidates.tab.interviewing", statuses: ["interviewing"], color: "#6B7684" },
+  { key: "offer", labelKey: "candidates.tab.offer", statuses: ["offer"], color: "#B8860B" },
   { key: "final_passed", labelKey: "candidates.tab.finalPassed", statuses: ["final_passed"], color: "#1D9E75" },
 ] as const;
 
@@ -106,8 +108,10 @@ const ALL_STEPS = [...PIPELINE_STEPS, ...EXIT_STEPS];
 const STAGE_OPTIONS = [
   { value: "new", labelKey: "candidates.tab.pending" },
   { value: "passed", labelKey: "candidates.tab.aiPassed" },
+  { value: "ready_to_forward", labelKey: "candidates.tab.readyToForward" },
   { value: "sent_to_company", labelKey: "candidates.tab.sentToCompany" },
   { value: "interviewing", labelKey: "candidates.tab.interviewing" },
+  { value: "offer", labelKey: "candidates.tab.offer" },
   { value: "final_passed", labelKey: "candidates.tab.finalPassed" },
   { value: "screening_failed", labelKey: "candidates.tab.screeningFailed" },
   { value: "rejected", labelKey: "candidates.tab.rejected" },
@@ -116,15 +120,13 @@ const STAGE_OPTIONS = [
 const STATUS_COLORS: Record<string, string> = {
   new: "#8B95A1",
   passed: "#3182F6",
+  ready_to_forward: "#2272EB",
   sent_to_company: "#E8590C",
   interviewing: "#6B7684",
+  offer: "#B8860B",
   final_passed: "#1D9E75",
   rejected: "#B0B8C1",
   screening_failed: "#B0B8C1",
-  // 레거시 AI 인터뷰 상태 (기존 데이터 표시용)
-  ai_interview_sent: "#3182F6",
-  ai_interview_done: "#3182F6",
-  ai_interview_passed: "#1D9E75",
 };
 
 function StatusBadge({ status, score, t }: { status: string; score: number | null; t: (k: string) => string }) {
@@ -1101,6 +1103,13 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
           {/* 주요 액션 */}
           <div className="space-y-3 pt-2">
             {c.pipeline_status === "passed" && (
+              <button onClick={() => updateStatus("ready_to_forward")} disabled={saving}
+                className="w-full py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
+                {t("action.markReadyToForward")}
+              </button>
+            )}
+
+            {c.pipeline_status === "ready_to_forward" && (
               <button onClick={() => updateStatus("sent_to_company")} disabled={saving}
                 className="w-full py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
                 {t("action.markSentToCompany")}
@@ -1116,9 +1125,9 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
 
             {c.pipeline_status === "interviewing" && (
               <div className="flex gap-2">
-                <button onClick={() => updateStatus("final_passed")} disabled={saving}
-                  className="flex-1 py-3 bg-[#1D9E75] text-white text-[14px] rounded-xl hover:bg-[#178A64] transition-colors disabled:opacity-50">
-                  {t("action.finalPass")}
+                <button onClick={() => updateStatus("offer")} disabled={saving}
+                  className="flex-1 py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
+                  {t("action.markOffer")}
                 </button>
                 <button onClick={() => updateStatus("rejected", { rejection_reason: "Interview rejected" })} disabled={saving}
                   className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50">
@@ -1127,7 +1136,20 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
               </div>
             )}
 
-            {(c.pipeline_status === "ai_interview_passed" || c.pipeline_status === "final_passed") && (
+            {c.pipeline_status === "offer" && (
+              <div className="flex gap-2">
+                <button onClick={() => updateStatus("final_passed")} disabled={saving}
+                  className="flex-1 py-3 bg-[#1D9E75] text-white text-[14px] rounded-xl hover:bg-[#178A64] transition-colors disabled:opacity-50">
+                  {t("action.finalPass")}
+                </button>
+                <button onClick={() => updateStatus("rejected", { rejection_reason: "Offer declined" })} disabled={saving}
+                  className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50">
+                  {t("action.reject")}
+                </button>
+              </div>
+            )}
+
+            {c.pipeline_status === "final_passed" && (
               <a href={`/admin/profiles/${c.id}`}
                 className="block w-full py-3 bg-[#1D9E75] text-white text-[14px] text-center rounded-xl hover:bg-[#178A64] transition-colors">
                 프로필 카드 보기

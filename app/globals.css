@@ -268,3 +268,27 @@ body {
   animation-delay: 1s;
 }
 
+
+/* ===== 어드민 가독성 보정 =====
+   어드민 페이지 전반의 폰트가 너무 작고(11~13px) 그레이가 연해서 안 보이는 문제.
+   컴포넌트를 일일이 고치는 대신 admin-root 스코프에서 arbitrary 클래스를 일괄 보정. */
+.admin-root .text-\[11px\] { font-size: 12.5px; }
+.admin-root .text-\[12px\] { font-size: 13.5px; }
+.admin-root .text-\[13px\] { font-size: 14.5px; }
+.admin-root .text-\[14px\] { font-size: 15.5px; }
+.admin-root .text-\[15px\] { font-size: 16.5px; }
+.admin-root .text-\[16px\] { font-size: 17.5px; }
+.admin-root .text-\[20px\] { font-size: 22px; }
+.admin-root .text-\[22px\] { font-size: 24px; }
+
+/* 연한 그레이 → 한 단계씩 진하게 (Toss 그레이스케일 기준) */
+.admin-root .text-gray-400 { color: #8B95A1; } /* gray-500 */
+.admin-root .text-gray-500 { color: #6B7684; } /* gray-600 */
+.admin-root .text-gray-600 { color: #4E5968; } /* gray-700 */
+.admin-root .text-gray-700 { color: #333D4B; } /* gray-800 */
+
+/* antialiased 스무딩이 작은 그레이 텍스트를 더 얇고 흐리게 만듦 → 어드민에선 기본 렌더링 사용 */
+.admin-root {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}

@@ -47,8 +47,10 @@ const HEADER_ALIASES: Record<string, string[]> = {
   company: ["기업명"],
   name: ["이름", "Name", "Tên ứng viên"],
   email: ["영어 이름(공란 가능)", "영어 이름", "Email", "Gmail"],
+  yoe: ["경력"],
   position: ["지원 포지션", "Applied Job"],
   matchScore: ["매칭점수"],
+  cvUrl: ["이력서_파일ID(구드 링크)", "이력서_파일ID", "CV"],
   status: ["Status"],
   note: ["Note", "Ghi chú"],
   dateUpdated: ["Date updated"],
@@ -260,6 +262,109 @@ export async function updateQualifiedStatus(
   });
 }
 
+function normalizeCompany(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+}
+
+// 회사명 표기가 탭 이름과 다른 경우 (한/영 표기, 철자 차이)
+const COMPANY_TAB_ALIASES: Record<string, string> = {
+  szupia: "Shupia",
+  디자인교과서: "Designbook",
+  오픈마인즈: "Openminds",
+  커몬소셜: "Camon Social",
+  하이퍼스타: "Hyperstar",
+  하이퍼스타주: "Hyperstar",
+  모엔: "Moen",
+  사운드그래프: "SoundGraph",
+  경북원룸: "GYEONGBOK ONE-ROOM",
+  멋쟁이사자처럼: "LIKELION",
+  likelion: "LIKELION",
+  omicsyn: "Omnisync",
+  헬로사이언스에듀: "Hello Science Edu",
+  셀틱스: "Celltics Technology",
+  씨드랩: "SeedLab",
+  옐로우닥터: "Yellow Dr.",
+  메타이노텍: "Metainnotech",
+  원스퀘어: "ONSQUARE",
+  위펀: "Wefun",
+  앤드와이즈: "Andwise",
+  무티스테이션: "Mutistation",
+  넥사코드: "Nexacode",
+  웰팟: "Wellpod",
+  루미크래프트: "Lumicraft",
+  지노시스: "Jinosys",
+};
+
+// 기업명으로 Qualified 시트의 탭 찾기 (별칭 → 정규화 일치 → 부분일치)
+export async function findTabForCompany(company: string): Promise<string | null> {
+  if (!company) return null;
+  const sheets = getSheets();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: QUALIFIED_SHEET_ID,
+    fields: "sheets.properties.title",
+  });
+  const tabs = (meta.data.sheets || [])
+    .map((s) => s.properties?.title || "")
+    .filter((t) => t && !SKIP_TABS.has(t));
+  const target = normalizeCompany(company);
+  const alias = COMPANY_TAB_ALIASES[target];
+  if (alias && tabs.includes(alias)) return alias;
+  return (
+    tabs.find((t) => normalizeCompany(t) === target) ||
+    tabs.find((t) => normalizeCompany(t).includes(target) || target.includes(normalizeCompany(t))) ||
+    null
+  );
+}
+
+// Qualified 시트 탭에 후보자 행 추가 (헤더 매핑 기준으로 컬럼 채움)
+export async function appendQualifiedRow(
+  tab: string,
+  data: {
+    company: string;
+    name: string;
+    email: string;
+    yoe?: string;
+    position?: string;
+    matchScore?: string;
+    cvUrl?: string;
+    status: string;
+  }
+): Promise<void> {
+  const sheets = getSheets(true);
+  const head = await sheets.spreadsheets.values.get({
+    spreadsheetId: QUALIFIED_SHEET_ID,
+    range: `'${tab}'!A1:T10`,
+  });
+  const header = detectHeader((head.data.values as string[][]) || []);
+  if (!header || header.cols.name === undefined) {
+    throw new Error(`Header not found in tab "${tab}"`);
+  }
+
+  const maxCol = Math.max(...Object.values(header.cols));
+  const row: string[] = new Array(maxCol + 1).fill("");
+  const set = (field: string, value: string | undefined) => {
+    if (value && header.cols[field] !== undefined) row[header.cols[field]] = value;
+  };
+  const now = new Date();
+  set("company", data.company);
+  set("name", data.name);
+  set("email", data.email);
+  set("yoe", data.yoe);
+  set("position", data.position);
+  set("matchScore", data.matchScore);
+  set("cvUrl", data.cvUrl);
+  set("status", data.status);
+  set("dateUpdated", `${now.getDate()}/${now.getMonth() + 1}`);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: QUALIFIED_SHEET_ID,
+    range: `'${tab}'!A1`,
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [row] },
+  });
+}
+
 export function normalizeName(s: string): string {
   return s
     .normalize("NFD")
@@ -285,10 +390,35 @@ export function findQualifiedRow(
   return rows.find((r) => normalizeName(r.name) === n) || null;
 }
 
-// 앱 pipeline_status → 시트 Status 표기
+// 앱 pipeline_status → 시트 Status 표기 (시트가 실제로 쓰는 어휘 그대로)
 export const PIPELINE_TO_SHEET_STATUS: Record<string, string> = {
+  ready_to_forward: "ready to forward",
   sent_to_company: "sent to company",
-  interviewing: "interviewing",
+  interviewing: "company interviewed",
+  offer: "offer",
   final_passed: "passed",
   rejected: "rejected",
+};
+
+// 시트 Status → 앱 pipeline_status (역방향 동기화용)
+export const SHEET_TO_PIPELINE: Record<string, string> = {
+  "ready to forward": "ready_to_forward",
+  "sent to company": "sent_to_company",
+  "company interviewed": "interviewing",
+  interviewing: "interviewing",
+  offer: "offer",
+  "not selected": "rejected",
+  rejected: "rejected",
+  passed: "final_passed",
+};
+
+// 파이프라인 진행 순서 (역방향 동기화 시 앞 단계로 되돌리지 않기 위한 랭크)
+export const PIPELINE_RANK: Record<string, number> = {
+  new: 0,
+  passed: 1,
+  ready_to_forward: 2,
+  sent_to_company: 3,
+  interviewing: 4,
+  offer: 5,
+  final_passed: 6,
 };
