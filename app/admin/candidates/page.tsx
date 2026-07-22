@@ -117,6 +117,15 @@ const STAGE_OPTIONS = [
   { value: "rejected", labelKey: "candidates.tab.rejected" },
 ];
 
+// 리스트 인라인 원클릭 진행용 다음 단계 체인
+const NEXT_STAGE: Record<string, string> = {
+  passed: "ready_to_forward",
+  ready_to_forward: "sent_to_company",
+  sent_to_company: "interviewing",
+  interviewing: "offer",
+  offer: "final_passed",
+};
+
 const STATUS_COLORS: Record<string, string> = {
   new: "#8B95A1",
   passed: "#3182F6",
@@ -183,6 +192,33 @@ export default function CandidatesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const bulkStageRef = useRef<HTMLDivElement>(null);
   const bulkJDRef = useRef<HTMLDivElement>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  // 리스트에서 모달 없이 바로 단계 변경 (낙관적 업데이트 + 시트 자동 반영)
+  const quickChangeStatus = async (c: Candidate, newStatus: string, extra?: Record<string, unknown>) => {
+    setCandidates((prev) => prev.map((x) => (x.id === c.id ? ({ ...x, pipeline_status: newStatus, ...extra } as Candidate) : x)));
+    setToast(`${c.full_name} → ${t(`status.${newStatus}`)}`);
+    await supabase.from("candidates").update({ pipeline_status: newStatus, ...extra, updated_at: new Date().toISOString() }).eq("id", c.id);
+    await updateTalentVerification(supabase, c.id, newStatus);
+    fetch("/api/admin/pipeline/push-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidateId: c.id }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.updated) {
+          setToast(`${c.full_name} → ${t(`status.${newStatus}`)} · ${j.appended ? t("toast.sheetRowAdded") : t("toast.sheetSynced")} ✓`);
+        }
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -528,7 +564,7 @@ export default function CandidatesPage() {
             {filtered.map((c) => (
               <div key={c.id}
                 onClick={bulkMode ? () => toggleSelect(c.id) : () => setSelectedCandidate(c)}
-                className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors ${
+                className={`group flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors ${
                   bulkMode && selected.has(c.id)
                     ? "bg-[#E8F3FF] border-l-2 border-l-[#3182F6]"
                     : "hover:bg-gray-50"
@@ -552,7 +588,28 @@ export default function CandidatesPage() {
                     {c.city && <span>{c.city}</span>}
                   </div>
                 </div>
-                <div className="flex flex-col items-end flex-shrink-0">
+                {/* 인라인 퀵 액션 (hover 시 표시) */}
+                {!bulkMode && (
+                  <div className="hidden group-hover:flex items-center gap-1.5 flex-shrink-0">
+                    {NEXT_STAGE[c.pipeline_status] && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); quickChangeStatus(c, NEXT_STAGE[c.pipeline_status]); }}
+                        className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[#3182F6] text-white hover:bg-[#2272EB] transition-colors whitespace-nowrap"
+                      >
+                        {t(`status.${NEXT_STAGE[c.pipeline_status]}`)} →
+                      </button>
+                    )}
+                    {!["rejected", "screening_failed", "final_passed"].includes(c.pipeline_status) && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); quickChangeStatus(c, "rejected", { rejection_reason: "Manual reject" }); }}
+                        className="px-3 py-1.5 rounded-lg text-[12px] bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors whitespace-nowrap"
+                      >
+                        {t("action.reject")}
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="flex flex-col items-end flex-shrink-0 group-hover:hidden">
                   <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full mb-1">{c.source}</span>
                   {c.applied_date && <span className="text-[11px] text-gray-400">{c.applied_date}</span>}
                 </div>
@@ -641,8 +698,32 @@ export default function CandidatesPage() {
         />
       )}
 
-      {selectedCandidate && (
-        <CandidateDetailModal candidate={selectedCandidate} onClose={() => { setSelectedCandidate(null); fetchCandidates(); }} jdMap={allJDs} />
+      {selectedCandidate && (() => {
+        const idx = filtered.findIndex((x) => x.id === selectedCandidate.id);
+        return (
+          <CandidateDetailModal
+            candidate={selectedCandidate}
+            jdMap={allJDs}
+            position={idx >= 0 ? `${idx + 1} / ${filtered.length}` : undefined}
+            onPrev={idx > 0 ? () => setSelectedCandidate(filtered[idx - 1]) : undefined}
+            onNext={idx >= 0 && idx < filtered.length - 1 ? () => setSelectedCandidate(filtered[idx + 1]) : undefined}
+            onStatusChanged={(id, status, extra) => {
+              setCandidates((prev) => prev.map((x) => (x.id === id ? ({ ...x, pipeline_status: status, ...extra } as Candidate) : x)));
+              // 단계 변경으로 현재 탭에서 빠져나가면 자동으로 다음 후보 선택 (연속 검토 흐름 유지)
+              if (!(tabGroup.statuses as readonly string[]).includes(status) && idx >= 0) {
+                const next = filtered[idx + 1] || filtered[idx - 1];
+                if (next && next.id !== id) setSelectedCandidate(next);
+              }
+            }}
+            onClose={() => { setSelectedCandidate(null); fetchCandidates(); }}
+          />
+        );
+      })()}
+
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[70] bg-gray-900 text-white text-[13px] px-4 py-2.5 rounded-xl">
+          {toast}
+        </div>
       )}
 
       {showCreateModal && (
@@ -808,7 +889,15 @@ function CreateCandidateModal({ jdMap, onClose, onCreated }: { jdMap: Record<str
   );
 }
 
-function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { candidate: Candidate; onClose: () => void; jdMap: Record<string, JobDescription> }) {
+function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap, onPrev, onNext, position, onStatusChanged }: {
+  candidate: Candidate;
+  onClose: () => void;
+  jdMap: Record<string, JobDescription>;
+  onPrev?: () => void;
+  onNext?: () => void;
+  position?: string;
+  onStatusChanged?: (id: string, status: string, extra?: Record<string, unknown>) => void;
+}) {
   const { t, lang } = useAdminI18n();
   const [c, setC] = useState(initCandidate);
   const [memo, setMemo] = useState(c.phone_interview_note || "");
@@ -818,10 +907,47 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
   const [editingCV, setEditingCV] = useState(false);
   const [cvDraft, setCvDraft] = useState(c.cv_url || "");
   const [savingCV, setSavingCV] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // 고급 토글 펼치면 패널을 맨 아래까지 부드럽게 스크롤 (삭제 버튼까지 다 보이게)
+  useEffect(() => {
+    if (showAdvanced) {
+      requestAnimationFrame(() => {
+        panelRef.current?.scrollTo({ top: panelRef.current.scrollHeight, behavior: "smooth" });
+      });
+    }
+  }, [showAdvanced]);
   const summary = c.llm_summary ? JSON.parse(c.llm_summary) : null;
   const currentJobCode = c.applied_job?.match(/^([A-Z]+\d+)/)?.[1] || "";
 
-  // 언어별 데이터 선택
+  // 닫힘 모션 재생 후 언마운트
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 220);
+  }, [onClose]);
+
+  // 후보 전환 시 패널은 유지하고 내용만 리셋 (슬라이드 모션은 열 때 1회만)
+  useEffect(() => {
+    setC(initCandidate);
+    setMemo(initCandidate.phone_interview_note || "");
+    setCvDraft(initCandidate.cv_url || "");
+    setEditingCV(false);
+  }, [initCandidate]);
+
+  // 키보드: ← → 후보 이동, Esc 닫기
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "Escape") handleClose();
+      if (e.key === "ArrowLeft" && onPrev) onPrev();
+      if (e.key === "ArrowRight" && onNext) onNext();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleClose, onPrev, onNext]);
+
   const getSummaryText = () => lang === "ko" ? (summary?.summary_ko || summary?.summary_en || summary?.summary || "") : (summary?.summary_en || summary?.summary || "");
   const getStrengths = () => lang === "ko" ? (summary?.strengths_ko || summary?.strengths_en || summary?.strengths || []) : (summary?.strengths_en || summary?.strengths || []);
   const getGaps = () => lang === "ko" ? (summary?.gaps_ko || summary?.gaps_en || summary?.gaps || []) : (summary?.gaps_en || summary?.gaps || []);
@@ -830,13 +956,13 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
     setSaving(true);
     await supabase.from("candidates").update({ pipeline_status: newStatus, ...extra, updated_at: new Date().toISOString() }).eq("id", c.id);
     await updateTalentVerification(supabase, c.id, newStatus);
-    // Qualified Candidates 시트에도 상태 반영 (실패해도 앱 흐름은 유지)
     fetch("/api/admin/pipeline/push-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ candidateId: c.id }),
     }).catch(() => {});
     setC((prev) => ({ ...prev, pipeline_status: newStatus, ...extra } as Candidate));
+    onStatusChanged?.(c.id, newStatus, extra);
     setSaving(false);
   };
 
@@ -862,66 +988,86 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
     try {
       const res = await fetch(`/api/admin/candidates/${c.id}`, { method: "DELETE" });
       const json = await res.json();
-      if (res.ok) {
-        onClose();
-      } else {
-        alert(`삭제 실패: ${json.error || "알 수 없는 오류"}`);
-      }
+      if (res.ok) handleClose();
+      else alert(`삭제 실패: ${json.error || "알 수 없는 오류"}`);
     } catch (e) {
       alert(`삭제 실패: ${e}`);
     }
     setDeleting(false);
   };
 
-  const changeStage = async (newStatus: string) => {
-    await updateStatus(newStatus);
-  };
+  const nextStage = NEXT_STAGE[c.pipeline_status];
+  const isTerminal = ["rejected", "screening_failed", "final_passed"].includes(c.pipeline_status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-[480px] h-full bg-white overflow-y-auto scrollbar-hide">
-        <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[16px] font-medium text-gray-900">{c.full_name}</h2>
+      <div className={`panel-backdrop absolute inset-0 bg-black/30 ${closing ? "panel-backdrop-out" : ""}`} onClick={handleClose} />
+      <div ref={panelRef} className={`panel-slide-in relative w-full max-w-[720px] h-full bg-white overflow-y-auto scrollbar-hide ${closing ? "panel-slide-out" : ""}`}>
+        {/* 고정 헤더: 이름 + 네비 + 액션 */}
+        <div className="sticky top-0 bg-white z-10 px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <h2 className="text-[17px] font-medium text-gray-900 truncate">{c.full_name}</h2>
               <StatusBadge status={c.pipeline_status} score={c.llm_score} t={t} />
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button onClick={onPrev} disabled={!onPrev}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:pointer-events-none"
+                title="←">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              {position && <span className="text-[12px] text-gray-400 tabular-nums px-1">{position}</span>}
+              <button onClick={onNext} disabled={!onNext}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:pointer-events-none"
+                title="→">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+              </button>
+              <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 ml-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          {/* 액션 바: 단계 액션은 왼쪽, 문서 링크는 오른쪽 */}
+          <div className="flex items-center gap-2">
+            {nextStage && (
+              <button onClick={() => updateStatus(nextStage)} disabled={saving}
+                className="px-4 py-2.5 bg-[#3182F6] text-white text-[13px] font-medium rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50 whitespace-nowrap">
+                {t(`status.${nextStage}`)} →
+              </button>
+            )}
+            {!isTerminal && (
+              <button onClick={() => updateStatus("rejected", { rejection_reason: "Manual reject" })} disabled={saving}
+                className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-[13px] rounded-xl hover:border-red-200 hover:text-red-500 transition-colors disabled:opacity-50 whitespace-nowrap">
+                {t("action.reject")}
+              </button>
+            )}
+            {c.pipeline_status === "final_passed" && (
+              <a href={`/admin/profiles/${c.id}`}
+                className="px-4 py-2.5 bg-[#1D9E75] text-white text-[13px] rounded-xl hover:bg-[#178A64] transition-colors whitespace-nowrap">
+                프로필 카드
+              </a>
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+              {c.cv_url && (
+                <a href={c.cv_url} target="_blank" rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 text-[13px] rounded-xl hover:bg-gray-200 transition-colors whitespace-nowrap">
+                  {t("detail.viewCV")}
+                </a>
+              )}
+              {c.portfolio_url && (
+                <a href={c.portfolio_url} target="_blank" rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 text-[13px] rounded-xl hover:bg-gray-200 transition-colors whitespace-nowrap">
+                  {t("detail.portfolio")}
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="px-6 py-5 space-y-5">
-          <div>
-            <p className="text-[11px] text-gray-500 mb-3">{t("detail.basicInfo")}</p>
-            <div className="space-y-2">
-              {c.position && <InfoRow label={t("detail.position")} value={c.position} />}
-              {c.yoe && <InfoRow label={t("detail.experience")} value={`${c.yoe}yr`} />}
-              {c.city && <InfoRow label={t("detail.city")} value={c.city} />}
-              {c.email && <InfoRow label={t("detail.email")} value={c.email} />}
-              {c.phone && <InfoRow label={t("detail.phone")} value={c.phone} />}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] text-gray-500 mb-3">{t("detail.applicationInfo")}</p>
-            <div className="space-y-2">
-              <InfoRow label={t("detail.source")} value={c.source} />
-              {c.applied_job && <InfoRow label={t("detail.appliedJob")} value={c.applied_job} />}
-              {c.applied_company && <InfoRow label={t("detail.appliedCompany")} value={c.applied_company} />}
-              {c.applied_date && <InfoRow label={t("detail.appliedDate")} value={c.applied_date} />}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] text-gray-500 mb-3">{t("bulk.assignJD")}</p>
-            <JDDropdown value={currentJobCode} onChange={assignJD} disabled={assigningJD} jdMap={jdMap} />
-          </div>
-
+          {/* 스크리닝 결과 — 판단에 제일 중요하니 최상단 */}
           {summary && (
             <div>
               <p className="text-[11px] text-gray-500 mb-3">{t("detail.screeningResult")}</p>
@@ -938,46 +1084,39 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
                   {summary.company && <span className="text-[11px] text-gray-500">{summary.company}</span>}
                 </div>
 
+                {getSummaryText() && <p className="text-[12px] text-gray-700">{getSummaryText()}</p>}
+
+                {summary.top_skills?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {summary.top_skills.map((s: string) => (
+                      <span key={s} className="text-[11px] bg-white px-2 py-0.5 rounded-full text-gray-700">{s}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  {getStrengths().length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-gray-500 mb-1">{t("detail.strengths")}</p>
+                      {getStrengths().map((s: string, i: number) => (
+                        <p key={i} className="text-[12px] text-[#1D9E75]">• {s}</p>
+                      ))}
+                    </div>
+                  )}
+                  {getGaps().length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-gray-500 mb-1">{t("detail.gaps")}</p>
+                      {getGaps().map((g: string, i: number) => (
+                        <p key={i} className="text-[12px] text-[#E8590C]">• {g}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {summary.yoe_check && (
                   <div>
                     <p className="text-[11px] text-gray-500 mb-1">{t("detail.yoeCheck")}</p>
                     <p className="text-[12px] text-gray-700">{summary.yoe_check}</p>
-                  </div>
-                )}
-
-                {getSummaryText() && (
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">{t("detail.summary")}</p>
-                    <p className="text-[12px] text-gray-700">{getSummaryText()}</p>
-                  </div>
-                )}
-
-                {summary.top_skills?.length > 0 && (
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">{t("detail.skills")}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {summary.top_skills.map((s: string) => (
-                        <span key={s} className="text-[11px] bg-white px-2 py-0.5 rounded-full text-gray-700">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {getStrengths().length > 0 && (
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">{t("detail.strengths")}</p>
-                    {getStrengths().map((s: string, i: number) => (
-                      <p key={i} className="text-[12px] text-[#1D9E75]">• {s}</p>
-                    ))}
-                  </div>
-                )}
-
-                {getGaps().length > 0 && (
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">{t("detail.gaps")}</p>
-                    {getGaps().map((g: string, i: number) => (
-                      <p key={i} className="text-[12px] text-[#E8590C]">• {g}</p>
-                    ))}
                   </div>
                 )}
 
@@ -1000,6 +1139,43 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
             </div>
           )}
 
+          {/* 기본 정보 + 지원 정보 2열 */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <p className="text-[11px] text-gray-500 mb-3">{t("detail.basicInfo")}</p>
+              <div className="space-y-2">
+                {c.position && <InfoRow label={t("detail.position")} value={c.position} />}
+                {c.yoe && <InfoRow label={t("detail.experience")} value={`${c.yoe}yr`} />}
+                {c.city && <InfoRow label={t("detail.city")} value={c.city} />}
+                {c.email && <InfoRow label={t("detail.email")} value={c.email} />}
+                {c.phone && <InfoRow label={t("detail.phone")} value={c.phone} />}
+              </div>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-500 mb-3">{t("detail.applicationInfo")}</p>
+              <div className="space-y-2">
+                <InfoRow label={t("detail.source")} value={c.source} />
+                {c.applied_job && <InfoRow label={t("detail.appliedJob")} value={c.applied_job} />}
+                {c.applied_company && <InfoRow label={t("detail.appliedCompany")} value={c.applied_company} />}
+                {c.applied_date && <InfoRow label={t("detail.appliedDate")} value={c.applied_date} />}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] text-gray-500 mb-2">{t("bulk.assignJD")}</p>
+            <JDDropdown value={currentJobCode} onChange={assignJD} disabled={assigningJD} jdMap={jdMap} />
+          </div>
+
+          {/* 메모 */}
+          <div>
+            <p className="text-[11px] text-gray-500 mb-2">{t("detail.memo")}</p>
+            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} onBlur={saveMemo}
+              placeholder={t("detail.memoPlaceholder")}
+              className="w-full h-20 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:border-gray-300" />
+          </div>
+
+          {/* CV 링크 관리 */}
           <div>
             <p className="text-[11px] text-gray-500 mb-2">CV</p>
             {editingCV ? (
@@ -1028,168 +1204,66 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap }: { ca
                     disabled={savingCV}
                     className="flex-1 py-2 bg-[#3182F6] text-white text-[13px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50"
                   >
-                    {savingCV ? "..." : lang === "ko" ? "저장" : lang === "vi" ? "Lưu" : "Save"}
+                    {savingCV ? "..." : t("common.save")}
                   </button>
                   <button
                     onClick={() => { setCvDraft(c.cv_url || ""); setEditingCV(false); }}
                     className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 text-[13px] rounded-xl hover:border-gray-300 transition-colors"
                   >
-                    {lang === "ko" ? "취소" : lang === "vi" ? "Hủy" : "Cancel"}
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex gap-2">
-                {c.cv_url ? (
-                  <>
-                    <a href={c.cv_url} target="_blank" rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-700 hover:bg-gray-200 transition-colors">
-                      {t("detail.viewCV")}
-                    </a>
-                    <button
-                      onClick={() => { setCvDraft(c.cv_url || ""); setEditingCV(true); }}
-                      className="px-3 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-600 hover:bg-gray-200 transition-colors"
-                    >
-                      {lang === "ko" ? "수정" : lang === "vi" ? "Sửa" : "Edit"}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!confirm(lang === "ko" ? "CV 링크를 삭제하시겠습니까?" : lang === "vi" ? "Xóa liên kết CV?" : "Delete CV link?")) return;
-                        setSavingCV(true);
-                        await fetch(`/api/admin/candidates/${c.id}`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ cv_url: null }),
-                        });
-                        setC((prev) => ({ ...prev, cv_url: null } as Candidate));
-                        setCvDraft("");
-                        setSavingCV(false);
-                      }}
-                      disabled={savingCV}
-                      className="px-3 py-2.5 bg-red-50 rounded-xl text-[13px] text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
-                    >
-                      {lang === "ko" ? "삭제" : lang === "vi" ? "Xóa" : "Del"}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => { setCvDraft(""); setEditingCV(true); }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#E8F3FF] rounded-xl text-[13px] text-[#3182F6] hover:bg-[#D4EAFF] transition-colors"
-                  >
-                    + {lang === "ko" ? "CV 링크 추가" : lang === "vi" ? "Thêm CV" : "Add CV link"}
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => { setCvDraft(c.cv_url || ""); setEditingCV(true); }}
+                className="text-[13px] text-[#3182F6] hover:underline"
+              >
+                {c.cv_url ? t("common.edit") : `+ ${lang === "ko" ? "CV 링크 추가" : lang === "vi" ? "Thêm CV" : "Add CV link"}`}
+              </button>
             )}
           </div>
 
-          {c.portfolio_url && (
-            <div className="flex gap-2">
-              <a href={c.portfolio_url} target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] text-gray-700 hover:bg-gray-200 transition-colors">
-                {t("detail.portfolio")}
-              </a>
-            </div>
-          )}
-
-          {/* 메모 */}
-          <div>
-            <p className="text-[11px] text-gray-500 mb-2">{t("detail.memo")}</p>
-            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} onBlur={saveMemo}
-              placeholder={t("detail.memoPlaceholder")}
-              className="w-full h-24 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:border-gray-300" />
-          </div>
-
-          {/* 주요 액션 */}
-          <div className="space-y-3 pt-2">
-            {c.pipeline_status === "passed" && (
-              <button onClick={() => updateStatus("ready_to_forward")} disabled={saving}
-                className="w-full py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
-                {t("action.markReadyToForward")}
-              </button>
-            )}
-
-            {c.pipeline_status === "ready_to_forward" && (
-              <button onClick={() => updateStatus("sent_to_company")} disabled={saving}
-                className="w-full py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
-                {t("action.markSentToCompany")}
-              </button>
-            )}
-
-            {c.pipeline_status === "sent_to_company" && (
-              <button onClick={() => updateStatus("interviewing")} disabled={saving}
-                className="w-full py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
-                {t("action.markInterviewing")}
-              </button>
-            )}
-
-            {c.pipeline_status === "interviewing" && (
-              <div className="flex gap-2">
-                <button onClick={() => updateStatus("offer")} disabled={saving}
-                  className="flex-1 py-3 bg-[#3182F6] text-white text-[14px] rounded-xl hover:bg-[#2272EB] transition-colors disabled:opacity-50">
-                  {t("action.markOffer")}
-                </button>
-                <button onClick={() => updateStatus("rejected", { rejection_reason: "Interview rejected" })} disabled={saving}
-                  className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50">
-                  {t("action.reject")}
-                </button>
-              </div>
-            )}
-
-            {c.pipeline_status === "offer" && (
-              <div className="flex gap-2">
-                <button onClick={() => updateStatus("final_passed")} disabled={saving}
-                  className="flex-1 py-3 bg-[#1D9E75] text-white text-[14px] rounded-xl hover:bg-[#178A64] transition-colors disabled:opacity-50">
-                  {t("action.finalPass")}
-                </button>
-                <button onClick={() => updateStatus("rejected", { rejection_reason: "Offer declined" })} disabled={saving}
-                  className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50">
-                  {t("action.reject")}
-                </button>
-              </div>
-            )}
-
-            {c.pipeline_status === "final_passed" && (
-              <a href={`/admin/profiles/${c.id}`}
-                className="block w-full py-3 bg-[#1D9E75] text-white text-[14px] text-center rounded-xl hover:bg-[#178A64] transition-colors">
-                프로필 카드 보기
-              </a>
-            )}
-          </div>
-
-          {/* 단계 변경 + 삭제 */}
-          <div className="pt-4 mt-2 border-t border-gray-100 space-y-3">
-            <div>
-              <p className="text-[11px] text-gray-500 mb-2">{t("bulk.manualStageChange")}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {STAGE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => changeStage(opt.value)}
-                    disabled={saving || c.pipeline_status === opt.value}
-                    className={`px-2.5 py-1.5 rounded-lg text-[12px] transition-colors disabled:opacity-40 ${
-                      c.pipeline_status === opt.value
-                        ? "bg-gray-900 text-white"
-                        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {t(opt.labelKey)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={deleteCandidate}
-              disabled={deleting}
-              className="w-full py-2.5 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {deleting ? t("bulk.deleting") : t("bulk.deleteCandidate")}
+          {/* 고급: 수동 단계 변경 + 삭제 */}
+          <div className="pt-3 border-t border-gray-100">
+            <button onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                className={`transition-transform ${showAdvanced ? "rotate-90" : ""}`}>
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              {t("bulk.manualStageChange")}
             </button>
+            {showAdvanced && (
+              <div className="section-expand-in mt-3 space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {STAGE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateStatus(opt.value)}
+                      disabled={saving || c.pipeline_status === opt.value}
+                      className={`px-2.5 py-1.5 rounded-lg text-[12px] transition-colors disabled:opacity-40 ${
+                        c.pipeline_status === opt.value
+                          ? "bg-gray-900 text-white"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {t(opt.labelKey)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={deleteCandidate}
+                  disabled={deleting}
+                  className="w-full py-2.5 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {deleting ? t("bulk.deleting") : t("bulk.deleteCandidate")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
     </div>
   );
 }

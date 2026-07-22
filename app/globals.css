@@ -292,3 +292,44 @@ body {
   -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
 }
+
+/* 어드민 상세 패널: 우측 슬라이드 인 + 배경 페이드 (열 때 1회만) */
+@keyframes panelSlideIn {
+  from { transform: translateX(48px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.panel-slide-in {
+  animation: panelSlideIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.panel-backdrop {
+  animation: backdropFadeIn 0.2s ease-out both;
+}
+
+/* 상세 패널 닫힘 모션 (slide-in보다 뒤에 선언되어야 우선 적용됨) */
+@keyframes panelSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(48px); opacity: 0; }
+}
+@keyframes backdropFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.panel-slide-out {
+  animation: panelSlideOut 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.panel-backdrop-out {
+  animation: backdropFadeOut 0.2s ease-in both;
+}
+
+/* 접기 섹션 펼침 모션 */
+@keyframes sectionExpandIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section-expand-in {
+  animation: sectionExpandIn 0.22s ease-out both;
+}

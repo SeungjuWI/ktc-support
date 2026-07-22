@@ -7,6 +7,10 @@ import {
   updateQualifiedStatus,
   findTabForCompany,
   appendQualifiedRow,
+  readEmployees,
+  readOpsFunnel,
+  appendEmployeeRow,
+  normalizeName,
   PIPELINE_TO_SHEET_STATUS,
 } from "@/lib/qualified-sheets";
 
@@ -46,12 +50,41 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // 매칭 완료 → KTC Ops Employee 탭에 입사자 자동 기록 (이미 있으면 스킵)
+    let employeeAdded = false;
+    if (candidate.pipeline_status === "final_passed") {
+      try {
+        const employees = await readEmployees();
+        const email = (candidate.email || "").trim().toLowerCase();
+        const exists = employees.some(
+          (e) => (email && e.email.toLowerCase() === email) || normalizeName(e.name) === normalizeName(candidate.full_name)
+        );
+        if (!exists) {
+          const allJDsForOps = await loadAllJDs(getSupabaseAdmin());
+          const jdForOps = resolveJD(candidate.applied_job, allJDsForOps);
+          const ops = await readOpsFunnel();
+          const opsRow = jdForOps ? ops.find((o) => o.jdCode === jdForOps.code) : undefined;
+          await appendEmployeeRow({
+            category: opsRow?.category,
+            code: opsRow?.code,
+            company: jdForOps?.company || candidate.applied_company || "",
+            position: jdForOps?.position || candidate.applied_job || "",
+            name: candidate.full_name,
+            email: candidate.email || "",
+          });
+          employeeAdded = true;
+        }
+      } catch {
+        // Employee 탭 기록 실패해도 Qualified 시트 반영은 계속
+      }
+    }
+
     const rows = await readQualifiedRows();
     const row = findQualifiedRow(rows, candidate.email, candidate.full_name);
 
     if (row) {
       await updateQualifiedStatus(row.tab, row.rowIndex, sheetStatus);
-      return NextResponse.json({ success: true, updated: true, tab: row.tab, row: row.rowIndex, status: sheetStatus });
+      return NextResponse.json({ success: true, updated: true, tab: row.tab, row: row.rowIndex, status: sheetStatus, employeeAdded });
     }
 
     // 행이 없음 → 발송 대기/기업 발송 시에만 새 행 자동 추가 (탈락 등은 행 생성 안 함)

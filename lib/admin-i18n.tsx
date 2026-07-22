@@ -155,6 +155,11 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "detail.memo": { ko: "메모", en: "Memo", vi: "Ghi chú" },
   "detail.memoPlaceholder": { ko: "메모...", en: "Notes...", vi: "Ghi chú..." },
 
+  // 토스트
+  "toast.sheetSynced": { ko: "시트 반영됨", en: "Sheet updated", vi: "Đã cập nhật sheet" },
+  "toast.sheetRowAdded": { ko: "시트에 행 추가됨", en: "Row added to sheet", vi: "Đã thêm dòng vào sheet" },
+  "toast.sheetSkipped": { ko: "시트 미반영", en: "Not in sheet", vi: "Không có trong sheet" },
+
   // 후보자 단계 액션
   "action.markReadyToForward": { ko: "발송 대기 처리", en: "Mark as Ready to Forward", vi: "Đánh dấu chờ gửi DN" },
   "action.markSentToCompany": { ko: "기업 발송 처리", en: "Mark as Sent to Company", vi: "Đánh dấu đã gửi DN" },

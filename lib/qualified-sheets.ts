@@ -216,6 +216,53 @@ export async function readEmployees(): Promise<EmployeeRow[]> {
   return rows;
 }
 
+// 매칭 완료(입사) 시 KTC Ops Employee 탭에 입사자 행 자동 추가 (편집자 권한 필요)
+export async function appendEmployeeRow(data: {
+  category?: string;
+  code?: string;
+  company: string;
+  position?: string;
+  name: string;
+  email: string;
+}): Promise<void> {
+  const sheets = getSheets(true);
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: KTC_OPS_SHEET_ID,
+    range: "'Employee'!A1:L10",
+  });
+  const values = (res.data.values as string[][]) || [];
+  const headerIdx = values.findIndex(
+    (row) => row.includes("Name") && row.some((c) => (c || "").toLowerCase().startsWith("e-mail"))
+  );
+  if (headerIdx < 0) throw new Error("Employee tab header not found");
+  const header = values[headerIdx];
+  const col = (name: string) => header.findIndex((c) => (c || "").toLowerCase().startsWith(name.toLowerCase()));
+
+  const maxCol = header.length - 1;
+  const row: string[] = new Array(maxCol + 1).fill("");
+  const set = (headerName: string, value: string | undefined) => {
+    const i = col(headerName);
+    if (value && i >= 0) row[i] = value;
+  };
+  const now = new Date();
+  set("category", data.category);
+  set("status", "Ing");
+  set("code", data.code);
+  set("company", data.company);
+  set("position 1", data.position);
+  set("name", data.name);
+  set("e-mail", data.email);
+  set("onboarding", `${now.getMonth() + 1}/${now.getDate()}`);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: KTC_OPS_SHEET_ID,
+    range: "'Employee'!A1",
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [row] },
+  });
+}
+
 function colLetter(idx: number): string {
   let s = "";
   let n = idx;

@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { updateTalentVerification } from "@/lib/create-talent-card";
+import { loadAllJDs, resolveJD } from "@/lib/jd-data";
+import {
+  readQualifiedRows,
+  findQualifiedRow,
+  updateQualifiedStatus,
+  findTabForCompany,
+  appendQualifiedRow,
+  PIPELINE_TO_SHEET_STATUS,
+} from "@/lib/qualified-sheets";
+
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -29,7 +41,53 @@ export async function PATCH(req: NextRequest) {
     for (const id of ids) {
       await updateTalentVerification(supabase, id, value);
     }
-    return NextResponse.json({ success: true, updated: ids.length });
+
+    // Qualified 시트 일괄 반영 (시트 오류가 나도 앱 상태 변경은 유지)
+    let sheetUpdated = 0;
+    let sheetAppended = 0;
+    const sheetErrors: string[] = [];
+    const sheetStatus = PIPELINE_TO_SHEET_STATUS[value];
+    if (sheetStatus) {
+      try {
+        const rows = await readQualifiedRows();
+        const { data: cands } = await supabase
+          .from("candidates")
+          .select("id, full_name, email, yoe, cv_url, llm_score, applied_job, applied_company")
+          .in("id", ids);
+        const allJDs = await loadAllJDs(supabase);
+        for (const c of cands || []) {
+          try {
+            const row = findQualifiedRow(rows, c.email, c.full_name);
+            if (row) {
+              await updateQualifiedStatus(row.tab, row.rowIndex, sheetStatus);
+              sheetUpdated++;
+            } else if (["ready_to_forward", "sent_to_company"].includes(value)) {
+              const jd = resolveJD(c.applied_job, allJDs);
+              const company = jd?.company || c.applied_company || "";
+              const tab = await findTabForCompany(company);
+              if (!tab) continue;
+              await appendQualifiedRow(tab, {
+                company,
+                name: c.full_name,
+                email: c.email || "",
+                yoe: c.yoe || "",
+                position: c.applied_job || jd?.position || "",
+                matchScore: c.llm_score != null ? String(c.llm_score) : "",
+                cvUrl: c.cv_url || "",
+                status: sheetStatus,
+              });
+              sheetAppended++;
+            }
+          } catch (e) {
+            sheetErrors.push(`${c.full_name}: ${e instanceof Error ? e.message : "failed"}`);
+          }
+        }
+      } catch (e) {
+        sheetErrors.push(e instanceof Error ? e.message : "sheet read failed");
+      }
+    }
+
+    return NextResponse.json({ success: true, updated: ids.length, sheetUpdated, sheetAppended, sheetErrors });
   }
 
   if (action === "assign_jd") {
