@@ -6,6 +6,7 @@ import { updateTalentVerification } from "@/lib/create-talent-card";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { JD_MAP, resolveJD, type JobDescription } from "@/lib/jd-data";
 import { getUserProfile } from "@/lib/supabase-auth";
+import { getCached, setCached } from "@/lib/admin-cache";
 import ConfirmModal from "@/app/components/ConfirmModal";
 
 function Dropdown({ value, onChange, options, placeholder }: {
@@ -169,8 +170,8 @@ async function readStream(res: Response, onData: (data: Record<string, unknown>)
 
 export default function CandidatesPage() {
   const { t, lang } = useAdminI18n();
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [candidates, setCandidates] = useState<Candidate[]>(() => getCached<Candidate[]>("admin:candidates") ?? []);
+  const [loading, setLoading] = useState(() => !getCached("admin:candidates"));
   const [activeTab, setActiveTab] = useState<string>("pending");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -256,6 +257,9 @@ export default function CandidatesPage() {
   }, []);
 
   useEffect(() => { fetchCandidates(); }, [fetchCandidates]);
+
+  // 낙관적 업데이트 포함 모든 변경을 캐시에 반영 (다른 화면 갔다 와도 최신 상태 유지)
+  useEffect(() => { if (!loading) setCached("admin:candidates", candidates); }, [candidates, loading]);
 
   const runAction = async (url: string, label: string) => {
     setBusy(true); setResult(null); setProgress(0); setMessage(`${label}...`);

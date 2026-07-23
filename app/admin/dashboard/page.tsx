@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import ConfirmModal from "@/app/components/ConfirmModal";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { getCached, setCached } from "@/lib/admin-cache";
 
 interface JDRow {
   jdCode: string;
@@ -70,8 +71,8 @@ const SHEET_STATUS_KEYS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { t, lang } = useAdminI18n();
-  const [data, setData] = useState<PipelineData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PipelineData | null>(() => getCached<PipelineData>("admin:pipeline"));
+  const [loading, setLoading] = useState(() => !getCached("admin:pipeline"));
   const [error, setError] = useState("");
   const [closing, setClosing] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<{ jd: JDRow; dbCount: number; sheetCount: number } | null>(null);
@@ -93,14 +94,15 @@ export default function DashboardPage() {
 
   const funnelColor = (funnel: string) => funnelMeta(funnel)?.color || "#8B95A1";
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  // 캐시가 있으면 로딩 화면 없이 백그라운드로 갱신. fresh=true면 서버의 시트 캐시도 무시(동기화 직후)
+  const fetchData = useCallback(async (fresh = false) => {
     setError("");
     try {
-      const res = await fetch("/api/admin/pipeline");
+      const res = await fetch(fresh ? "/api/admin/pipeline?fresh=1" : "/api/admin/pipeline");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "failed");
       setData(json);
+      setCached("admin:pipeline", json);
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed");
     }
@@ -150,7 +152,7 @@ export default function DashboardPage() {
           ? `Đồng bộ xong — xác nhận ${json.promoted} · chuyển sang đã gửi DN ${json.demoted} · không khớp DB ${json.unmatchedEmployees.length}`
           : `Hire sync done — matched ${json.promoted} · moved to sent ${json.demoted} · unmatched ${json.unmatchedEmployees.length}`
       );
-      fetchData();
+      fetchData(true);
     } catch (e) {
       setResult(e instanceof Error ? e.message : "failed");
     }
@@ -196,7 +198,7 @@ export default function DashboardPage() {
           ? `Đồng bộ xong — cập nhật ${json.updated} UV (từ ${json.sheetRows} dòng sheet)`
           : `Sheet → app sync done — ${json.updated} candidates updated (from ${json.sheetRows} sheet rows)`
       );
-      fetchData();
+      fetchData(true);
     } catch (e) {
       setResult(e instanceof Error ? e.message : "failed");
     }
@@ -241,7 +243,7 @@ export default function DashboardPage() {
           ? `${jd.jdCode} đã loại UV còn lại — DB ${json.dbUpdated} · sheet ${json.sheetUpdated}`
           : `${jd.jdCode} remaining candidates rejected — DB ${json.dbUpdated} · sheet ${json.sheetUpdated}`
       );
-      fetchData();
+      fetchData(true);
     } catch (e) {
       setResult(e instanceof Error ? e.message : "failed");
     }
@@ -292,7 +294,7 @@ export default function DashboardPage() {
             className="px-4 py-2 bg-[#1D9E75] text-white text-[13px] rounded-xl hover:bg-[#178A64] transition-colors disabled:opacity-50 whitespace-nowrap">
             {syncingHires ? t("dash.syncing") : t("dash.syncHires")}
           </button>
-          <button onClick={fetchData} disabled={loading}
+          <button onClick={() => fetchData(true)} disabled={loading}
             className="px-4 py-2 bg-gray-900 text-white text-[13px] rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap">
             {loading ? t("dash.loading") : t("dash.refresh")}
           </button>

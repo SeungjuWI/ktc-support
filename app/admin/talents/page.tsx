@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/app/components/ConfirmModal";
 import type { Talent } from "@/lib/types";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { getCached, setCached } from "@/lib/admin-cache";
 
 type TalentWithPublished = Talent & { published: boolean };
 
@@ -27,8 +28,8 @@ function getAvailabilityLabel(a: string) {
 
 export default function AdminTalentsPage() {
   const { t, lang } = useAdminI18n();
-  const [talents, setTalents] = useState<TalentWithPublished[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [talents, setTalents] = useState<TalentWithPublished[]>(() => getCached<TalentWithPublished[]>("admin:talents") ?? []);
+  const [loading, setLoading] = useState(() => !getCached("admin:talents"));
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -41,6 +42,8 @@ export default function AdminTalentsPage() {
   useEffect(() => {
     loadTalents();
   }, []);
+
+  useEffect(() => { if (!loading) setCached("admin:talents", talents); }, [talents, loading]);
 
   async function loadTalents() {
     const { data } = await supabase

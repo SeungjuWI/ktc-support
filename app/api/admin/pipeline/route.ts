@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { loadAllJDs, matchJobCode } from "@/lib/jd-data";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
-import { readQualifiedRows, readOpsFunnel, readEmployees, type QualifiedRow } from "@/lib/qualified-sheets";
+import { readQualifiedRows, readOpsFunnel, readEmployees, type QualifiedRow, type OpsFunnelRow, type EmployeeRow } from "@/lib/qualified-sheets";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -16,8 +16,15 @@ function getSupabaseAdmin() {
 
 const SCREENED_STATUSES = ["passed"];
 
-export async function GET() {
+// 구글시트 3종 읽기는 호출당 0.5~2초 → 60초 인메모리 캐시로 대시보드 진입 지연 제거.
+// 시트를 직접 수정하는 동기화 직후에는 ?fresh=1로 캐시를 무시하고 다시 읽는다.
+const SHEET_TTL_MS = 60_000;
+let sheetCache: { at: number; qualified: QualifiedRow[]; ops: OpsFunnelRow[]; employees: EmployeeRow[] } | null = null;
+
+export async function GET(req: Request) {
   const supabase = getSupabaseAdmin();
+  const fresh = new URL(req.url).searchParams.get("fresh") === "1";
+  const cachedSheets = !fresh && sheetCache && Date.now() - sheetCache.at < SHEET_TTL_MS ? sheetCache : null;
 
   // DB(후보자·JD)와 구글시트 3종을 전부 병렬로 읽기 (직렬 실행 시 지연이 누적됨)
   const [candidatesResult, jdResult, qualifiedResult, opsResult, employeesResult] = await Promise.allSettled([
@@ -25,9 +32,9 @@ export async function GET() {
       supabase, "candidates", "applied_job, pipeline_status"
     ),
     loadAllJDs(supabase),
-    readQualifiedRows(),
-    readOpsFunnel(),
-    readEmployees(),
+    cachedSheets ? Promise.resolve(cachedSheets.qualified) : readQualifiedRows(),
+    cachedSheets ? Promise.resolve(cachedSheets.ops) : readOpsFunnel(),
+    cachedSheets ? Promise.resolve(cachedSheets.employees) : readEmployees(),
   ]);
 
   if (candidatesResult.status === "rejected") {
@@ -48,6 +55,10 @@ export async function GET() {
   if (qualifiedResult.status === "rejected") sheetErrors.push(`Qualified sheet: ${qualifiedResult.reason?.message || "read failed"}`);
   if (opsResult.status === "rejected") sheetErrors.push(`KTC Ops sheet: ${opsResult.reason?.message || "read failed"}`);
   if (employeesResult.status === "rejected") sheetErrors.push(`Employee tab: ${employeesResult.reason?.message || "read failed"}`);
+
+  if (!cachedSheets && sheetErrors.length === 0) {
+    sheetCache = { at: Date.now(), qualified, ops, employees };
+  }
 
   // 전체 퍼널 합계 (DB 기준)
   const totals = {

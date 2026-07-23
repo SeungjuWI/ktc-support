@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile } from "@/lib/supabase-auth";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { getCached, setCached } from "@/lib/admin-cache";
 
 type UserProfile = {
   id: string;
@@ -20,9 +21,9 @@ type UserProfile = {
 export default function AdminUsersPage() {
   const { t } = useAdminI18n();
   const [myRole, setMyRole] = useState<string>("admin");
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>(() => getCached<UserProfile[]>("admin:users") ?? []);
   const [tab, setTab] = useState<"all" | "super_admin" | "admin" | "user">("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getCached("admin:users"));
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,8 @@ export default function AdminUsersPage() {
     }
     init();
   }, []);
+
+  useEffect(() => { if (!loading) setCached("admin:users", users); }, [users, loading]);
 
   async function loadUsers() {
     const { data } = await supabase

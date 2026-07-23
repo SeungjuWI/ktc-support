@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { JD_MAP, loadAllJDs, type JobDescription } from "@/lib/jd-data";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { getCached, setCached } from "@/lib/admin-cache";
 
 interface JDPosting {
   id: string;
@@ -29,15 +30,15 @@ const PLATFORM_OPTIONS = [
 
 export default function JDPage() {
   const { t } = useAdminI18n();
-  const [jdList, setJdList] = useState<JDWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jdList, setJdList] = useState<JDWithStats[]>(() => getCached<JDWithStats[]>("admin:jdList") ?? []);
+  const [loading, setLoading] = useState(() => !getCached("admin:jdList"));
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
-  const [postings, setPostings] = useState<Record<string, JDPosting[]>>({});
+  const [postings, setPostings] = useState<Record<string, JDPosting[]>>(() => getCached<Record<string, JDPosting[]>>("admin:jdPostings") ?? {});
   const [addingFor, setAddingFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddJD, setShowAddJD] = useState(false);
   const [editingJDCode, setEditingJDCode] = useState<string | null>(null);
-  const [dbJDCodes, setDbJDCodes] = useState<Set<string>>(new Set());
+  const [dbJDCodes, setDbJDCodes] = useState<Set<string>>(() => getCached<Set<string>>("admin:jdCodes") ?? new Set());
   const [searchingFor, setSearchingFor] = useState<string | null>(null);
 
   const loadPostings = async () => {
@@ -108,6 +109,10 @@ export default function JDPage() {
     loadJDs();
     loadPostings();
   }, []);
+
+  useEffect(() => { if (!loading) setCached("admin:jdList", jdList); }, [jdList, loading]);
+  useEffect(() => { setCached("admin:jdPostings", postings); }, [postings]);
+  useEffect(() => { setCached("admin:jdCodes", dbJDCodes); }, [dbJDCodes]);
 
   if (loading) {
     return (

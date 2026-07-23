@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { getCached, setCached } from "@/lib/admin-cache";
 import ConfirmModal from "@/app/components/ConfirmModal";
 
 interface DeliveryItem {
@@ -29,8 +30,8 @@ function extractFirstSentence(text: string): string {
 
 export default function DeliveryPage() {
   const { t } = useAdminI18n();
-  const [items, setItems] = useState<DeliveryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<DeliveryItem[]>(() => getCached<DeliveryItem[]>("admin:delivery") ?? []);
+  const [loading, setLoading] = useState(() => !getCached("admin:delivery"));
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,8 @@ export default function DeliveryPage() {
   };
 
   useEffect(() => { fetchItems(); }, []);
+
+  useEffect(() => { if (!loading) setCached("admin:delivery", items); }, [items, loading]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
