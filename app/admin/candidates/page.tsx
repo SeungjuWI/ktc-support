@@ -91,7 +91,7 @@ interface Candidate {
 
 const PIPELINE_STEPS = [
   { key: "pending", labelKey: "candidates.tab.pending", statuses: ["new"], color: "#8B95A1" },
-  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed"], color: "#3182F6" },
+  { key: "ai_passed", labelKey: "candidates.tab.aiPassed", statuses: ["passed", "ai_interview_passed"], color: "#3182F6" },
   { key: "ready_to_forward", labelKey: "candidates.tab.readyToForward", statuses: ["ready_to_forward"], color: "#2272EB" },
   { key: "sent_to_company", labelKey: "candidates.tab.sentToCompany", statuses: ["sent_to_company"], color: "#E8590C" },
   { key: "interviewing", labelKey: "candidates.tab.interviewing", statuses: ["interviewing"], color: "#6B7684" },
@@ -270,7 +270,9 @@ export default function CandidatesPage() {
     const status = params.get("status");
     if (status) {
       const step = ALL_STEPS.find((s) => (s.statuses as readonly string[]).includes(status));
-      if (step) setActiveTab(step.key);
+      setActiveTab(step ? step.key : "all"); // 매핑 안 되는 레거시 상태는 전체 탭으로
+    } else if (jd) {
+      setActiveTab("all"); // JD "모든 지원자 보기" → 전체 표시
     }
   }, []);
 
@@ -312,7 +314,7 @@ export default function CandidatesPage() {
     setBusy(false); setProgress(0); setMessage("");
   };
 
-  const tabGroup = ALL_STEPS.find((tab) => tab.key === activeTab)!;
+  const tabGroup = ALL_STEPS.find((tab) => tab.key === activeTab); // "all" 탭이면 undefined
   const sources = Array.from(new Set(candidates.map((c) => c.source)));
   // applied_job에서 allJDs를 통해 회사/포지션 추출 (코드 기준 단일 해석)
   const getCompany = (c: Candidate) => resolveJD(c.applied_job, allJDs)?.company ?? null;
@@ -347,7 +349,7 @@ export default function CandidatesPage() {
   ) as Record<string, number>;
 
   const filtered = filteredBase
-    .filter((c) => tabGroup.statuses.includes(c.pipeline_status as never))
+    .filter((c) => !tabGroup || tabGroup.statuses.includes(c.pipeline_status as never)) // "all"이면 상태 필터 없음
     .filter((c) => !search || c.full_name.toLowerCase().includes(search.toLowerCase()));
 
   // 탭/필터/검색이 바뀌면 렌더 개수 리셋
@@ -483,6 +485,25 @@ export default function CandidatesPage() {
 
       {/* 파이프라인 로드맵 */}
       <div className="bg-white rounded-2xl border border-gray-200/60 p-5 mb-5">
+        {/* 전체 탭 — 상태 무관 모든 지원자 */}
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`w-full mb-3 rounded-xl border px-3.5 py-3 flex items-center justify-between transition-colors ${
+            activeTab === "all" ? "" : "bg-white border-gray-200 hover:border-gray-300"
+          }`}
+          style={activeTab === "all" ? { borderColor: "#191F28", backgroundColor: "#191F280D" } : undefined}
+        >
+          <span
+            className={`text-[12px] ${activeTab === "all" ? "font-medium" : ""}`}
+            style={{ color: activeTab === "all" ? "#191F28" : "#6B7684" }}
+          >
+            {t("candidates.tab.all")}
+          </span>
+          <span className="text-[20px] font-medium leading-none tabular-nums" style={{ color: "#191F28" }}>
+            {filteredBase.length.toLocaleString()}
+          </span>
+        </button>
+
         <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
           {PIPELINE_STEPS.map((step) => {
             const isActive = activeTab === step.key;
@@ -753,7 +774,7 @@ export default function CandidatesPage() {
             onStatusChanged={(id, status, extra) => {
               setCandidates((prev) => prev.map((x) => (x.id === id ? ({ ...x, pipeline_status: status, ...extra } as Candidate) : x)));
               // 단계 변경으로 현재 탭에서 빠져나가면 자동으로 다음 후보 선택 (연속 검토 흐름 유지)
-              if (!(tabGroup.statuses as readonly string[]).includes(status) && idx >= 0) {
+              if (tabGroup && !(tabGroup.statuses as readonly string[]).includes(status) && idx >= 0) {
                 const next = filtered[idx + 1] || filtered[idx - 1];
                 if (next && next.id !== id) setSelectedCandidate(next);
               }

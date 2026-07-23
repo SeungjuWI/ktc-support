@@ -115,6 +115,7 @@ const translations: Record<string, Record<AdminLang, string>> = {
   "candidates.dedupResult.groups": { ko: "중복 그룹", en: "Duplicate groups", vi: "Nhóm trùng" },
   "candidates.dedupResult.deleted": { ko: "명 삭제", en: " deleted", vi: " đã xóa" },
   "candidates.generateCards": { ko: "카드 생성", en: "Generate Cards", vi: "Tạo thẻ" },
+  "candidates.tab.all": { ko: "전체", en: "All", vi: "Tất cả" },
   "candidates.tab.pending": { ko: "스크리닝 대기", en: "Pending Screening", vi: "Chờ sàng lọc" },
   "candidates.tab.aiPassed": { ko: "스크리닝 합격", en: "Screening Passed", vi: "Đạt sàng lọc" },
   "candidates.tab.readyToForward": { ko: "발송 대기", en: "Ready to Forward", vi: "Chờ gửi DN" },
