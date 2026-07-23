@@ -143,10 +143,11 @@ export default function JDPage() {
       <Link
         key={status}
         href={`/admin/candidates?jd=${encodeURIComponent(code)}&status=${encodeURIComponent(status)}`}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] hover:opacity-75 transition-opacity"
-        style={{ backgroundColor: pipelineStatusColor(status) + "18", color: pipelineStatusColor(status) }}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] hover:opacity-75 transition-opacity"
+        style={{ backgroundColor: pipelineStatusColor(status) + "14", color: pipelineStatusColor(status) }}
       >
-        {t(`status.${status}`)} {count}
+        {t(`status.${status}`)}
+        <span className="font-medium">{count}</span>
       </Link>
     ));
   };
@@ -203,14 +204,14 @@ export default function JDPage() {
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setModal({ mode: "edit", stat: item })}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 title={t("common.edit")}
               >
                 <PencilIcon />
               </button>
               <button
                 onClick={() => setDeleteTarget(item)}
-                className="p-1.5 text-gray-400 hover:text-[#E8590C] transition-colors"
+                className="p-2 rounded-lg text-gray-400 hover:text-[#E8590C] hover:bg-[#FFF8F0] transition-colors"
                 title={t("common.delete")}
               >
                 <TrashIcon />
@@ -227,45 +228,63 @@ export default function JDPage() {
         </div>
 
         {isExpanded && (
-          <div className="px-5 pb-5 border-t border-gray-100">
+          <div className="border-t border-gray-100">
             {/* 지원자 현황 — 칩 클릭 시 후보자 페이지 해당 필터로 이동 */}
-            <div className="flex items-start justify-between gap-3 pt-4 mb-4">
-              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                {item.totalCandidates > 0
-                  ? statusChips(item.code, item.statusCounts)
-                  : <span className="text-[11px] text-gray-400">{t("jd.noApplicants")}</span>}
-                {item.totalCandidates > 0 && (
-                  <Link
-                    href={`/admin/candidates?jd=${encodeURIComponent(item.code)}`}
-                    className="text-[11px] text-[#3182F6] hover:text-[#2272EB] transition-colors ml-1"
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <p className="text-[13px] font-medium text-gray-900">
+                  {t("jd.applicants")}{" "}
+                  <span className={item.totalCandidates > 0 ? "text-[#3182F6]" : "text-gray-400"}>{item.totalCandidates}</span>
+                </p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {item.totalCandidates > 0 && (
+                    <Link
+                      href={`/admin/candidates?jd=${encodeURIComponent(item.code)}`}
+                      className="px-3 py-1.5 rounded-lg text-[13px] text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                      {t("jd.viewAllCandidates")} →
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => setSearchingFor(searchingFor === item.code ? null : item.code)}
+                    className="px-3 py-1.5 rounded-lg text-[13px] bg-[#E8F3FF] text-[#3182F6] hover:bg-[#D9EBFF] transition-colors"
                   >
-                    {t("jd.viewAllCandidates")} →
-                  </Link>
-                )}
+                    {searchingFor === item.code ? t("common.cancel") : t("jd.addCandidates")}
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => setSearchingFor(searchingFor === item.code ? null : item.code)}
-                className="text-[11px] text-[#3182F6] hover:text-[#2272EB] transition-colors flex-shrink-0"
-              >
-                {searchingFor === item.code ? t("common.cancel") : t("jd.addCandidates")}
-              </button>
+
+              {item.totalCandidates > 0 ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {statusChips(item.code, item.statusCounts)}
+                </div>
+              ) : (
+                <p className="text-[12px] text-gray-400">{t("jd.noApplicants")}</p>
+              )}
+
+              {searchingFor === item.code && (
+                <div className="mt-3">
+                  <CandidateSearchPanel
+                    t={t}
+                    jdCode={item.code}
+                    onChanged={fetchStats}
+                  />
+                </div>
+              )}
             </div>
 
-            {searchingFor === item.code && (
-              <CandidateSearchPanel
-                t={t}
-                jdCode={item.code}
-                onChanged={fetchStats}
-              />
-            )}
-
             {/* 구인 공고 링크 */}
-            <div className="pt-1">
+            <div className="px-5 py-4 border-t border-gray-100">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[12px] font-medium text-gray-700">{t("jd.postingLinks")}</p>
+                <p className="text-[13px] font-medium text-gray-900">
+                  {t("jd.postingLinks")}
+                  {(postings[item.code] || []).length > 0 && (
+                    <span className="text-gray-400 font-normal"> {(postings[item.code] || []).length}</span>
+                  )}
+                </p>
                 <button
                   onClick={() => setAddingFor(addingFor === item.code ? null : item.code)}
-                  className="text-[11px] text-[#3182F6] hover:text-[#2272EB] transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-[13px] bg-[#E8F3FF] text-[#3182F6] hover:bg-[#D9EBFF] transition-colors"
                 >
                   {addingFor === item.code ? t("common.cancel") : t("jd.add")}
                 </button>
@@ -312,19 +331,19 @@ export default function JDPage() {
                 </div>
               ) : (
                 addingFor !== item.code && (
-                  <p className="text-[11px] text-gray-400 py-1">{t("jd.noPostings")}</p>
+                  <p className="text-[12px] text-gray-400">{t("jd.noPostings")}</p>
                 )
               )}
             </div>
 
             {/* JD 전문 — 기본 접힘 */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="px-5 py-4 border-t border-gray-100">
               <button
                 onClick={() => setFullJD((prev) => toggleSet(prev, item.code))}
-                className="text-[11px] text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1"
+                className="w-full flex items-center justify-between text-[13px] font-medium text-gray-900 hover:text-gray-600 transition-colors"
               >
                 {fullJD.has(item.code) ? t("jd.hideFullJD") : t("jd.viewFullJD")}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                   className={`transition-transform duration-100 ${fullJD.has(item.code) ? "rotate-180" : ""}`}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -395,7 +414,7 @@ export default function JDPage() {
                 </span>
                 <button
                   onClick={() => setModal({ mode: "add", presetCode: u.code })}
-                  className="text-[11px] text-[#3182F6] hover:text-[#2272EB] transition-colors flex-shrink-0"
+                  className="px-3 py-1.5 rounded-lg text-[13px] bg-[#E8F3FF] text-[#3182F6] hover:bg-[#D9EBFF] transition-colors flex-shrink-0"
                 >
                   {t("jd.registerJD")}
                 </button>
@@ -421,7 +440,7 @@ export default function JDPage() {
         <div className="mt-6">
           <button
             onClick={() => setShowClosed(!showClosed)}
-            className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors mb-2"
+            className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 transition-colors mb-2 py-1"
           >
             {t("jd.section.closed")} <span className="font-medium text-gray-900">{closedList.length}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -475,7 +494,7 @@ export default function JDPage() {
 
 function PencilIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
@@ -484,7 +503,7 @@ function PencilIcon() {
 
 function TrashIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
@@ -503,8 +522,8 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function DetailSection({ title, content }: { title: string; content: string }) {
   return (
     <div>
-      <p className="text-[11px] text-gray-500 mb-1.5">{title}</p>
-      <div className="text-[12px] text-gray-700 leading-[1.6] whitespace-pre-line bg-gray-50 rounded-xl px-4 py-3">
+      <p className="text-[12px] text-gray-500 mb-1.5">{title}</p>
+      <div className="text-[13px] text-gray-700 leading-[1.7] whitespace-pre-line bg-gray-50 rounded-xl px-4 py-3.5">
         {content}
       </div>
     </div>
@@ -825,7 +844,7 @@ function StatusPillSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-[10px] font-medium rounded-full px-2 py-0.5 transition-opacity hover:opacity-75"
+        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 transition-opacity hover:opacity-75"
         style={{ backgroundColor: color + "18", color }}
       >
         {current ? t(current.labelKey) : value}
@@ -1132,10 +1151,10 @@ function CandidateSearchPanel({
         onChange={(e) => handleInput(e.target.value)}
         placeholder={t("jd.searchPlaceholder")}
         autoFocus
-        className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 outline-none focus:border-[#3182F6]"
+        className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 outline-none focus:border-[#3182F6]"
       />
 
-      {loading && <p className="text-[11px] text-gray-400 py-2">{t("common.loading")}</p>}
+      {loading && <p className="text-[12px] text-gray-400 py-2">{t("common.loading")}</p>}
 
       {!loading && results.length > 0 && (
         <div className="max-h-[280px] overflow-y-auto space-y-1.5">
@@ -1158,9 +1177,9 @@ function CandidateSearchPanel({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-medium text-gray-900 truncate">{c.full_name}</span>
+                    <span className="text-[13px] font-medium text-gray-900 truncate">{c.full_name}</span>
                     {c.llm_score != null && (
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
                         c.llm_score >= 85 ? "bg-[#FFF8F0] text-[#E8590C]"
                         : c.llm_score >= 70 ? "bg-[#E8F3FF] text-[#3182F6]"
                         : "bg-gray-100 text-gray-500"
@@ -1169,10 +1188,10 @@ function CandidateSearchPanel({
                       </span>
                     )}
                     {assigned && (
-                      <span className="text-[10px] text-gray-400">{t("jd.alreadyAssigned")}</span>
+                      <span className="text-[11px] text-gray-400">{t("jd.alreadyAssigned")}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+                  <div className="flex items-center gap-1.5 text-[12px] text-gray-500 mt-0.5">
                     {c.position && <span className="truncate">{c.position}</span>}
                     {c.yoe && <><span>·</span><span>{c.yoe}</span></>}
                     {c.applied_job && !assigned && (
@@ -1187,11 +1206,11 @@ function CandidateSearchPanel({
       )}
 
       {!loading && query.trim().length >= 2 && results.length === 0 && (
-        <p className="text-[11px] text-gray-400 py-2">{t("jd.noCandidatesFound")}</p>
+        <p className="text-[12px] text-gray-400 py-2">{t("jd.noCandidatesFound")}</p>
       )}
 
       {message && (
-        <p className="text-[11px] text-[#1D9E75] bg-[#1D9E75]/10 px-3 py-2 rounded-lg">{message}</p>
+        <p className="text-[12px] text-[#1D9E75] bg-[#1D9E75]/10 px-3 py-2 rounded-lg">{message}</p>
       )}
 
       {selected.size > 0 && (
@@ -1199,7 +1218,7 @@ function CandidateSearchPanel({
           <button
             onClick={handleAdd}
             disabled={saving}
-            className="px-4 py-2 text-[12px] text-white bg-[#3182F6] rounded-lg hover:bg-[#2272EB] disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-[13px] text-white bg-[#3182F6] rounded-xl hover:bg-[#2272EB] disabled:opacity-50 transition-colors"
           >
             {saving ? t("jd.form.saving") : `${t("jd.addSelected")} (${selected.size})`}
           </button>
@@ -1308,14 +1327,14 @@ function PostingForm({
       <div className="flex justify-end gap-2 pt-1">
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-[11px] text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+          className="px-3.5 py-2 text-[13px] text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
         >
           {t("common.cancel")}
         </button>
         <button
           onClick={handleSubmit}
           disabled={saving || !url.trim()}
-          className="px-3 py-1.5 text-[11px] text-white bg-[#3182F6] rounded-lg hover:bg-[#2272EB] disabled:opacity-50 transition-colors"
+          className="px-3.5 py-2 text-[13px] text-white bg-[#3182F6] rounded-lg hover:bg-[#2272EB] disabled:opacity-50 transition-colors"
         >
           {saving ? t("jd.form.saving") : initial ? t("common.edit") : t("common.save")}
         </button>
@@ -1340,8 +1359,8 @@ function PostingRow({
   return (
     <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-200/60 px-3 py-2.5">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[11px] font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[12px] font-medium text-gray-700 bg-gray-100 px-2.5 py-0.5 rounded-full flex-shrink-0">
             {posting.platform}
           </span>
           <StatusPillSelect t={t} value={posting.status} onChange={onStatusChange} />
@@ -1350,12 +1369,12 @@ function PostingRow({
           href={posting.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] text-[#3182F6] hover:text-[#2272EB] truncate block transition-colors"
+          className="text-[12px] text-[#3182F6] hover:text-[#2272EB] truncate block transition-colors"
         >
           {posting.url}
         </a>
         {posting.posted_at && (
-          <p className="text-[10px] text-gray-400 mt-0.5">
+          <p className="text-[11px] text-gray-400 mt-0.5">
             {t("jd.posted")}: {new Date(posting.posted_at).toLocaleDateString("ko-KR", {
               year: "numeric", month: "short", day: "numeric",
               hour: "2-digit", minute: "2-digit",
@@ -1366,20 +1385,20 @@ function PostingRow({
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onEdit}
-          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           title={t("common.edit")}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </button>
         <button
           onClick={onDelete}
-          className="p-1.5 text-gray-400 hover:text-[#E8590C] transition-colors"
+          className="p-2 rounded-lg text-gray-400 hover:text-[#E8590C] hover:bg-[#FFF8F0] transition-colors"
           title={t("common.delete")}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
