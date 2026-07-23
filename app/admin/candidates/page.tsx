@@ -177,6 +177,7 @@ export default function CandidatesPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [positionFilter, setPositionFilter] = useState<string>("all");
+  const [jdFilter, setJdFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(200); // 수천 행 한번에 DOM 렌더 방지
   const [busy, setBusy] = useState(false);
@@ -261,6 +262,18 @@ export default function CandidatesPage() {
   // 낙관적 업데이트 포함 모든 변경을 캐시에 반영 (다른 화면 갔다 와도 최신 상태 유지)
   useEffect(() => { if (!loading) setCached("admin:candidates", candidates); }, [candidates, loading]);
 
+  // JD 페이지 딥링크: /admin/candidates?jd=CODE&status=STATUS
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jd = params.get("jd");
+    if (jd) setJdFilter(jd.toUpperCase());
+    const status = params.get("status");
+    if (status) {
+      const step = ALL_STEPS.find((s) => (s.statuses as readonly string[]).includes(status));
+      if (step) setActiveTab(step.key);
+    }
+  }, []);
+
   const runAction = async (url: string, label: string) => {
     setBusy(true); setResult(null); setProgress(0); setMessage(`${label}...`);
     try {
@@ -312,8 +325,16 @@ export default function CandidatesPage() {
     candidates.map((c) => getPosition(c)).filter(Boolean)
   )) as string[];
 
-  // 필터(소스/회사/포지션) 적용된 베이스 — 탭/검색 제외
+  // JD 필터: 코드 해석 일치 또는 applied_job 접두사 일치 (미등록 코드도 커버)
+  const matchesJD = (c: Candidate) => {
+    if (jdFilter === "all") return true;
+    if (resolveJD(c.applied_job, allJDs)?.code === jdFilter) return true;
+    return (c.applied_job || "").toUpperCase().startsWith(jdFilter);
+  };
+
+  // 필터(소스/회사/포지션/JD) 적용된 베이스 — 탭/검색 제외
   const filteredBase = candidates
+    .filter(matchesJD)
     .filter((c) => sourceFilter === "all" || c.source === sourceFilter)
     .filter((c) => companyFilter === "all" || getCompany(c) === companyFilter)
     .filter((c) => positionFilter === "all" || getPosition(c) === positionFilter);
@@ -332,7 +353,7 @@ export default function CandidatesPage() {
   // 탭/필터/검색이 바뀌면 렌더 개수 리셋
   useEffect(() => {
     setVisibleCount(200);
-  }, [activeTab, sourceFilter, companyFilter, positionFilter, search]);
+  }, [activeTab, sourceFilter, companyFilter, positionFilter, jdFilter, search]);
 
 
   const toggleSelect = (id: string) => {
@@ -527,6 +548,18 @@ export default function CandidatesPage() {
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
+        {jdFilter !== "all" && (
+          <button
+            onClick={() => { setJdFilter("all"); window.history.replaceState(null, "", window.location.pathname); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] bg-gray-900 text-white whitespace-nowrap"
+          >
+            JD: {jdFilter}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
         <Dropdown
           value={companyFilter}
           onChange={setCompanyFilter}
