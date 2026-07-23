@@ -8,6 +8,24 @@ function getSupabaseAdmin() {
   );
 }
 
+// 상세 모달용 단건 조회 (목록 API가 제외하는 llm_summary 포함 전체 컬럼)
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = getSupabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("candidates")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
+}
+
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = getSupabaseAdmin();

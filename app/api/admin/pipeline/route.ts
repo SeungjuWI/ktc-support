@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { loadAllJDs, matchJobCode } from "@/lib/jd-data";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { readQualifiedRows, readOpsFunnel, readEmployees, type QualifiedRow } from "@/lib/qualified-sheets";
 
 export const dynamic = "force-dynamic";
@@ -18,29 +19,28 @@ const SCREENED_STATUSES = ["passed"];
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
-  // 후보자 전체 (필요 컬럼만, 페이지네이션)
-  const candidates: { applied_job: string | null; pipeline_status: string }[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await supabase
-      .from("candidates")
-      .select("applied_job, pipeline_status")
-      .order("id")
-      .range(from, from + 999);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    if (!data || data.length === 0) break;
-    candidates.push(...data);
-    if (data.length < 1000) break;
-    from += 1000;
-  }
-
-  const allJDs = await loadAllJDs(supabase);
-
-  const [qualifiedResult, opsResult, employeesResult] = await Promise.allSettled([
+  // DB(후보자·JD)와 구글시트 3종을 전부 병렬로 읽기 (직렬 실행 시 지연이 누적됨)
+  const [candidatesResult, jdResult, qualifiedResult, opsResult, employeesResult] = await Promise.allSettled([
+    fetchAllRows<{ applied_job: string | null; pipeline_status: string }>(
+      supabase, "candidates", "applied_job, pipeline_status"
+    ),
+    loadAllJDs(supabase),
     readQualifiedRows(),
     readOpsFunnel(),
     readEmployees(),
   ]);
+
+  if (candidatesResult.status === "rejected") {
+    return NextResponse.json({ error: String(candidatesResult.reason) }, { status: 500 });
+  }
+  if (candidatesResult.value.error) {
+    return NextResponse.json({ error: candidatesResult.value.error }, { status: 500 });
+  }
+  if (jdResult.status === "rejected") {
+    return NextResponse.json({ error: String(jdResult.reason) }, { status: 500 });
+  }
+  const candidates = candidatesResult.value.rows;
+  const allJDs = jdResult.value;
   const qualified = qualifiedResult.status === "fulfilled" ? qualifiedResult.value : [];
   const ops = opsResult.status === "fulfilled" ? opsResult.value : [];
   const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
@@ -117,7 +117,6 @@ export async function GET() {
   return NextResponse.json({
     totals,
     jdRows,
-    qualified,
     sheetErrors,
     syncedAt: new Date().toISOString(),
   });

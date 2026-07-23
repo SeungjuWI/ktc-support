@@ -83,7 +83,7 @@ interface Candidate {
   phone_interview_note: string | null;
   rejection_reason: string | null;
   llm_score: number | null;
-  llm_summary: string | null;
+  llm_summary?: string | null; // 목록 API는 제외 (무거운 스크리닝 JSON) — 상세 모달에서 개별 로드
   talent_id: string | null;
   created_at: string;
 }
@@ -177,6 +177,7 @@ export default function CandidatesPage() {
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [positionFilter, setPositionFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(200); // 수천 행 한번에 DOM 렌더 방지
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
@@ -323,6 +324,11 @@ export default function CandidatesPage() {
   const filtered = filteredBase
     .filter((c) => tabGroup.statuses.includes(c.pipeline_status as never))
     .filter((c) => !search || c.full_name.toLowerCase().includes(search.toLowerCase()));
+
+  // 탭/필터/검색이 바뀌면 렌더 개수 리셋
+  useEffect(() => {
+    setVisibleCount(200);
+  }, [activeTab, sourceFilter, companyFilter, positionFilter, search]);
 
 
   const toggleSelect = (id: string) => {
@@ -553,7 +559,7 @@ export default function CandidatesPage() {
           </div>
         ) : (
           <div className={`divide-y divide-gray-100 ${bulkMode && selected.size > 0 ? "mb-16" : ""}`}>
-            {filtered.map((c) => (
+            {filtered.slice(0, visibleCount).map((c) => (
               <div key={c.id}
                 onClick={bulkMode ? () => toggleSelect(c.id) : () => setSelectedCandidate(c)}
                 className={`group flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors ${
@@ -616,6 +622,14 @@ export default function CandidatesPage() {
                 )}
               </div>
             ))}
+            {filtered.length > visibleCount && (
+              <button
+                onClick={() => setVisibleCount((v) => v + 200)}
+                className="w-full py-3.5 text-[13px] text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                {lang === "ko" ? "더 보기" : lang === "vi" ? "Xem thêm" : "Show more"} ({filtered.length - visibleCount})
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -964,6 +978,20 @@ function CandidateDetailModal({ candidate: initCandidate, onClose, jdMap, onPrev
     setEditingCV(false);
     setCloneResult("");
   }, [initCandidate]);
+
+  // 목록 API는 llm_summary를 내려주지 않음 → 모달 열릴 때 단건 조회로 채움
+  useEffect(() => {
+    if (initCandidate.llm_summary !== undefined) return; // 이미 로드됨
+    let cancelled = false;
+    fetch(`/api/admin/candidates/${initCandidate.id}`)
+      .then((r) => r.json())
+      .then((full) => {
+        if (cancelled || !full?.id) return;
+        setC((prev) => (prev.id === full.id ? { ...prev, llm_summary: full.llm_summary ?? null } : prev));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [initCandidate.id, initCandidate.llm_summary]);
 
   // 키보드: ← → 후보 이동, Esc 닫기
   useEffect(() => {

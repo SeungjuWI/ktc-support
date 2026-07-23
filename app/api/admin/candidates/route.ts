@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -12,33 +13,23 @@ function getSupabaseAdmin() {
   );
 }
 
+// 목록에 필요한 컬럼만 (llm_summary는 후보당 수 KB의 스크리닝 JSON → 상세 모달에서 개별 로드)
+const LIST_COLUMNS =
+  "id, full_name, email, phone, city, position, yoe, cv_url, portfolio_url, skills, source, applied_date, applied_job, applied_company, pipeline_status, phone_interview_note, rejection_reason, llm_score, talent_id, created_at";
+
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
-  // Supabase 기본 1000 row 제한 우회: 페이지네이션으로 전체 fetch
-  const all: Record<string, unknown>[] = [];
-  const PAGE = 1000;
-  let from = 0;
+  const { rows, error } = await fetchAllRows(supabase, "candidates", LIST_COLUMNS, [
+    { column: "created_at", ascending: false },
+    { column: "id", ascending: true },
+  ]);
 
-  while (true) {
-    const { data, error } = await supabase
-      .from("candidates")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range(from, from + PAGE - 1);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < PAGE) break;
-    from += PAGE;
+  if (error) {
+    return NextResponse.json({ error }, { status: 500 });
   }
 
-  return NextResponse.json(all);
+  return NextResponse.json(rows);
 }
 
 export async function POST(req: Request) {
